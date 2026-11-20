@@ -29,25 +29,36 @@ template <class T> T Present(const std::optional<T> &value, const char *why) {
 void FixedInputReplay(ex::Schema &schema) {
     auto definition=ex::Definition(schema);
     auto &scene=std::get<epidemic::game::composition::SceneCompositionDefinition>(definition.documents[0].data);
-    auto node=scene.scene.nodes.front();node.id=epidemic::runtime::SceneNodeId{43};scene.scene.nodes.push_back(node);
-    auto placement=scene.placements.front();placement.node=node.id;scene.placements.push_back(placement);
+    auto node=scene.scene.nodes.front();for(std::uint64_t id=43;id<47;++id){node.id=epidemic::runtime::SceneNodeId{id};scene.scene.nodes.push_back(node);}
+    auto placement=scene.placements.front();for(std::uint64_t id=43;id<47;++id){placement.node=epidemic::runtime::SceneNodeId{id};scene.placements.push_back(placement);}
     auto root=std::get<epidemic::gameplay::composition::PrefabDefinition>(definition.documents[1].data).root.id;
     auto &graph=std::get<epidemic::runtime::graph::GraphDefinition>(definition.documents[2].data);
     std::erase_if(graph.connections,[](const auto &edge){return edge.input_port==ex::Id("before.arg")||edge.input_port==ex::Id("wait.ticks");});
     for(auto &n:graph.nodes)for(auto &port:n.ports)if(port.id==ex::Id("before.arg")||port.id==ex::Id("wait.ticks"))port.default_value=7;
+    // Real authoring graphs have data dependencies; five small demo graphs did
+    // not expose starvation by the former shared 512-instruction work budget.
+    epidemic::runtime::graph::ElementId previous{};
+    const auto literal=[](const std::string &key,std::int64_t value){auto p=ex::Port(key,epidemic::runtime::graph::PortKind::Data,epidemic::runtime::graph::PortDirection::Input);p.default_value=value;return p;};
+    for(int i=0;i<80;++i){
+        auto key="replay.add."+std::to_string(i);auto left=ex::Id(key+".left"),output=ex::Id(key+".out");
+        graph.nodes.push_back({ex::Id(key),ex::Id("add.type"),"Add",{literal(key+".left",7),literal(key+".right",0),ex::Port(key+".out",epidemic::runtime::graph::PortKind::Data,epidemic::runtime::graph::PortDirection::Output)}});
+        if(previous.IsValid())graph.connections.push_back({ex::Id(key+".edge"),previous,left});previous=output;
+    }
+    graph.connections.push_back({ex::Id("replay.damage"),previous,ex::Id("before.arg")});
     auto project=ex::Take(ed::EditorProject::Create("Temp/editor-tests/replay.epidemic",definition,schema.View()));
     std::vector<std::pair<std::int64_t,std::int64_t>> baseline;
     for(int replay=0;replay<8;++replay){
         auto options=ex::Options(schema);options.start_events=replay>=4;
         auto play=ex::Take(project->Play(std::move(options)));
         if(replay<4){ex::Take(play->Send(epidemic::runtime::SceneNodeId{42},{ex::Id("hit"),7}));
-            ex::Take(play->Send(epidemic::runtime::SceneNodeId{43},{ex::Id("hit"),7}));}
+            for(std::uint64_t id=43;id<47;++id)ex::Take(play->Send(epidemic::runtime::SceneNodeId{id},{ex::Id("hit"),7}));}
         std::vector<std::pair<std::int64_t,std::int64_t>> states;
         for(int tick=0;tick<20;++tick){
             if(replay%2&&tick%3==0)std::this_thread::sleep_for(std::chrono::milliseconds(1));
             ex::Take(play->Tick({1}));
             auto a=ex::Take(play->ReadComponentProperty(epidemic::runtime::SceneNodeId{42},root,schema.health,{},schema.points));
             auto b=ex::Take(play->ReadComponentProperty(epidemic::runtime::SceneNodeId{43},root,schema.health,{},schema.points));
+            for(std::uint64_t id=44;id<47;++id){auto sibling=ex::Take(play->ReadComponentProperty(epidemic::runtime::SceneNodeId{id},root,schema.health,{},schema.points));Check(sibling==a,"Five authoring activations starved across game ticks");}
             states.emplace_back(std::get<std::int64_t>(a),std::get<std::int64_t>(b));
             Check(states.back().first==states.back().second,"Equal native events within budget diverged across entity ticks without breakpoints");
         }
@@ -55,7 +66,7 @@ void FixedInputReplay(ex::Schema &schema) {
         if(replay==0)baseline=states;else Check(states==baseline,"Same tick-stamped inputs changed replay when wall pacing changed");
         ex::Take(play->Stop());
     }
-    std::cout<<"PASS two-entity fixed-input native replay, 8 explicit/autostart runs with different wall pacing; same-tick damage; no breakpoints\n";
+    std::cout<<"PASS five-entity data-heavy fixed-input native replay, 8 explicit/autostart runs with different wall pacing; same-tick damage; no breakpoints\n";
 }
 
 void CollisionAndChurn(ex::Schema &schema) {

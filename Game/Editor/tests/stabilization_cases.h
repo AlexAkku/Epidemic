@@ -33,8 +33,9 @@ void StabilizationFailures() {
     auto token = std::make_shared<int>(0);
     const std::weak_ptr<int> lifetime = token;
     auto session = Take(
-        project->Play(StabilizationBindings([token](const gc::OperationContext &, std::int64_t) {
+        project->Play(StabilizationBindings([token](const gc::OperationContext &, std::int64_t value) {
             ++*token;
+            if(value!=1)return foundation::Result<std::int64_t>::Success(value);
             return foundation::Result<std::int64_t>::Failure(
                 foundation::Error::Create("review.native_failure", "deliberate native error"));
         })));
@@ -45,16 +46,19 @@ void StabilizationFailures() {
     Check(handles.size() == 1, "Send exposes one activation through Editor API");
     const auto first = handles[0];
     Check(!first->IsFinished() && !first->Report(), "queued activation has no execution report");
-    // Queue a bounded burst while Running. A failed graph now puts Play in Failed;
-    // Stop must cancel the rest without ticking the failed session again.
+    // The first activation fails. Siblings reach a real nonzero Wait instead of
+    // relying on an aggregate scheduler cap to leave them unprocessed.
+    // Stop must cancel them without ticking the failed session again.
     for(std::size_t i=0;i<ed::PlaySession::kCompletedActivationRetention+5;++i)
-        Take(session->Send(SceneNodeId{42},{Id("hit"),1}));
+        Take(session->Send(SceneNodeId{42},{Id("hit"),7}));
     Take(session->Tick()); // The activation diagnostic and session phase are distinct.
     CheckNativeFailure(first);
     const auto original = first->Report();
     if (!original || !original->diagnostic)
         throw std::runtime_error("diagnostic missing");
     Check(session->Phase()==ed::PlayPhase::Failed&&!session->Tick(),"Failed Play refuses further simulation ticks");
+    handles=session->Activations();
+    Check(std::any_of(handles.begin(),handles.end(),[](const auto &handle){return handle->Report()&&handle->Report()->status==graph::ExecutionStatus::Waiting;}),"Failure fixture must have genuinely waiting sibling activations");
     Take(session->Stop());
     handles = session->Activations();
     Check(std::any_of(handles.begin(),handles.end(),[](const auto &handle){return handle->Report()&&handle->Report()->status==graph::ExecutionStatus::Cancelled;}),"Stop from Failed cancels the remaining queued activations");

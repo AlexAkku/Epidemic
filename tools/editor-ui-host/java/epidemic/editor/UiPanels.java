@@ -306,10 +306,10 @@ public final class UiPanels {
     }
     private JComponent scene(String id) {
         JPanel panel = Theme.island(new BorderLayout(6, 6));
-        JToolBar tools = new JToolBar(); tools.setFloatable(false);tools.setLayout(new GridLayout(0,4,4,4));
+        JToolBar tools = new JToolBar(); tools.setFloatable(false);tools.setLayout(new FlowLayout(FlowLayout.LEADING,3,0));tools.setBorder(BorderFactory.createEmptyBorder(2,2,2,2));
         boolean sceneEditor=id.startsWith("scene.editor");
-        JButton fit=new JButton("Fit"),reset=new JButton("Reset Transform");
-        JCheckBox snap=new JCheckBox("Snap (1 unit)"),grid=new JCheckBox("Grid",true);
+        JButton fit=new JButton("Fit"),reset=new JButton("Reset");reset.setToolTipText("Reset selected Transform");
+        JCheckBox snap=new JCheckBox("Snap"),grid=new JCheckBox("Grid",true);snap.setToolTipText("Snap to 1 unit");
         var toolButtons=new ArrayList<JToggleButton>();
         if(sceneEditor){
             tools.add(fit);
@@ -320,6 +320,7 @@ public final class UiPanels {
             toolButtons.getFirst().setSelected(true);
             tools.add(grid);tools.add(snap);tools.add(reset);
         }
+        for(Component child:tools.getComponents())if(child instanceof AbstractButton button){button.putClientProperty("JButton.buttonType","toolBarButton");button.setMargin(new Insets(2,5,2,5));button.setFont(button.getFont().deriveFont(11f));button.setFocusable(false);}
         panel.add(tools, BorderLayout.NORTH);
         try {
             NativeViewport viewport = new NativeViewport(); nativeViews.put(id, viewport); panel.add(viewport, BorderLayout.CENTER);
@@ -332,6 +333,7 @@ public final class UiPanels {
                 viewport.addKeyListener(new KeyAdapter(){
                     @Override public void keyPressed(KeyEvent e){if(e.getKeyCode()==KeyEvent.VK_ESCAPE){mouse.cancel();e.consume();}}
                 });
+                installSceneKeys(viewport,()->sceneDocument(id,snapshot),()->snapshot==null?0:snapshot.selection().kind()==1?snapshot.selection().element():0);
                 viewport.addFocusListener(new FocusAdapter(){@Override public void focusLost(FocusEvent e){mouse.cancel();}});
                 viewport.addHierarchyListener(e->{if(!viewport.isShowing()){mouse.cancel();if(referenceDrag!=null)referenceDrag.cancelFor(viewport);}});
                 viewport.addComponentListener(new ComponentAdapter(){@Override public void componentResized(ComponentEvent e){mouse.cancel();}});
@@ -451,75 +453,27 @@ public final class UiPanels {
             super.getTreeCellRendererComponent(owner,value,selected,expanded,leaf,row,focus);Object item=((DefaultMutableTreeNode)value).getUserObject();
             if(item instanceof ProjectFolderRow||item instanceof FolderRow)setIcon(expanded?getOpenIcon():getClosedIcon());return this;
         }});
+        tree.setEditable(true);tree.setCellEditor(new DefaultTreeCellEditor(tree,(DefaultTreeCellRenderer)tree.getCellRenderer()){
+            @Override public boolean isCellEditable(java.util.EventObject event){var path=tree.getSelectionPath();var item=path==null?null:explorerItem(((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject());return event==null&&explorerWritable()&&item!=null&&explorerEditable(item);}
+            @Override public Component getTreeCellEditorComponent(JTree owner,Object value,boolean selected,boolean expanded,boolean leaf,int row){var item=explorerItem(((DefaultMutableTreeNode)value).getUserObject());return super.getTreeCellEditorComponent(owner,item==null?value:new DefaultMutableTreeNode(item.path().substring(item.path().lastIndexOf('/')+1)),selected,expanded,leaf,row);}
+        });
         JPanel header = new JPanel(new BorderLayout(4, 4)); header.add(search, BorderLayout.NORTH); header.add(breadcrumb, BorderLayout.SOUTH);
         JComboBox<String> mode=new JComboBox<>(new String[]{"Tree","List","Grid"});
         JCheckBox internal=new JCheckBox("Show Internal (read-only)");
         JPanel options=new JPanel(new BorderLayout());options.add(mode,BorderLayout.WEST);options.add(internal);header.add(options,BorderLayout.CENTER);
         DefaultListModel<Object> listing=new DefaultListModel<>();JList<Object> list=new JList<>(listing);
-        if(!GraphicsEnvironment.isHeadless()){
-            installResourceDrag(tree,()->tree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode node?node.getUserObject():null);
-            installResourceDrag(list,list::getSelectedValue);
-            tree.setDragEnabled(true);
-            list.setDragEnabled(true);
-        }
-        sourceKeys(tree,()->tree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode n?n.getUserObject():null);
-        sourceKeys(list,list::getSelectedValue);
-        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
         CardLayout cards=new CardLayout();JPanel browser=new JPanel(cards);browser.add(new JScrollPane(tree),"Tree");browser.add(new JScrollPane(list),"List");
         mode.addActionListener(e->{boolean grid=mode.getSelectedItem().equals("Grid");list.setLayoutOrientation(grid?JList.HORIZONTAL_WRAP:JList.VERTICAL);list.setVisibleRowCount(grid?-1:0);list.setFixedCellWidth(grid?220:-1);list.setFixedCellHeight(grid?64:-1);cards.show(browser,mode.getSelectedItem().equals("Tree")?"Tree":"List");});
         list.addListSelectionListener(e->{if(refreshing||e.getValueIsAdjusting())return;Object row=list.getSelectedValue();if(row instanceof AssetRow asset)select.accept(new Bridge.Selection(6,0,asset.asset().id()));else if(row instanceof DocRow doc)select.accept(new Bridge.Selection(0,doc.document().id(),0));});
-        list.addMouseListener(new MouseAdapter(){@Override public void mouseClicked(MouseEvent e){if(e.getClickCount()==2){if(list.getSelectedValue() instanceof DocRow row)openDocument.accept(row.document());else if(list.getSelectedValue() instanceof SourceRow row)openSource.accept(row.path(),false);}}});
-        list.addMouseListener(new MouseAdapter(){public void mousePressed(MouseEvent event){popup(event);}public void mouseReleased(MouseEvent event){popup(event);}private void popup(MouseEvent event){if(!event.isPopupTrigger())return;int index=list.locationToIndex(event.getPoint());if(index<0||!list.getCellBounds(index,index).contains(event.getPoint())||!(listing.get(index) instanceof SourceRow source))return;list.setSelectedIndex(index);var menu=new JPopupMenu();menuItem(menu,"Open With…",()->openSource.accept(source.path(),true));for(String action:List.of("copy","cut","duplicate","rename","delete"))menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1),()->sourceFileAction.accept(action,source.path()));menu.show(list,event.getX(),event.getY());}});
         panel.add(header, BorderLayout.NORTH); panel.add(browser);
         JPanel buttons = new JPanel(new GridLayout(0, 2, 4, 4));
         JButton importButton=Theme.button("Import…",importPicker);assetButtons.add(importButton);buttons.add(importButton);
-        JButton create=new JButton("New Document…"),documentActions=new JButton("Document Actions…");
-        JPopupMenu kinds=new JPopupMenu();
-        for(int kind=0;kind<3;kind++) {
-            final int type=kind;JMenuItem item=new JMenuItem(new String[]{"Scene","Prefab","Graph"}[kind]);
-            item.addActionListener(event->createDocument.accept(type));kinds.add(item);
-        }
-        create.addActionListener(event->kinds.show(create,0,create.getHeight()));
-        create.setEnabled(documentCommandsEnabled);documentButtons.add(create);buttons.add(create);
         Supplier<Object> selectedRow=()->mode.getSelectedItem().equals("Tree")
-            ?(tree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode node?node.getUserObject():null)
-            :list.getSelectedValue();
-        Supplier<Bridge.Asset> selectedAsset=()->selectedRow.get() instanceof AssetRow asset?asset.asset():null;
-        documentActions.addActionListener(event->{
-            if(!(selectedRow.get() instanceof DocRow row)||snapshot==null)return;
-            var doc=row.document();
-            JPopupMenu menu=new JPopupMenu();
-            menuItem(menu,"Rename Document…",()->documentCommand.accept("rename",doc));
-            menuItem(menu,"Duplicate Document…",()->documentCommand.accept("duplicate",doc));
-            JMenuItem delete=new JMenuItem("Delete Document…");
-            delete.setEnabled(doc.id()!=snapshot.entry());
-            delete.addActionListener(e->documentCommand.accept("delete",doc));
-            menu.add(delete);
-            menu.show(documentActions,0,documentActions.getHeight());
-        });
-        documentActions.setEnabled(false);buttons.add(documentActions);
-        Map<String,JButton> assetEdits=new LinkedHashMap<>();
-        for(String name:List.of("Rename / Move","Duplicate","Reimport","Delete","Restore","Assign to Prefab")){
-            var button=Theme.button(name,()->{
-                var selected=selectedAsset.get();
-                if(selected!=null)assetCommand.accept(name,selected.id());
-                else if(name.equals("Rename / Move")&&selectedRow.get() instanceof DocRow row)documentCommand.accept("move",row.document());
-            });
-            button.setName("asset."+name);
-            assetEdits.put(name,button);buttons.add(button);
-        }
-        JButton watch=Theme.button("Watch Content…",()->assetCommand.accept("Watch",0L));
-        assetButtons.add(watch);buttons.add(watch);
-        Runnable updateAssetActions=()->{
-            documentActions.setEnabled(interactive&&snapshot!=null&&!snapshot.playing()&&selectedRow.get() instanceof DocRow);
-            var selected=selectedAsset.get();
-            boolean ready=interactive&&snapshot!=null&&snapshot.storage()==2&&!snapshot.playing()&&selected!=null;
-            assetEdits.forEach((name,button)->button.setEnabled((name.equals("Rename / Move")&&interactive&&snapshot!=null&&snapshot.storage()==2&&!snapshot.playing()&&selectedRow.get() instanceof DocRow)||(ready&&switch(name){
-                case "Restore"->selected.trashed();
-                case "Assign to Prefab"->texture(selected);
-                default->!selected.trashed();
-            })));
-        };
+            ?(tree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode node?node.getUserObject():null):list.getSelectedValue();
+        JButton watch=Theme.button("Watch Content…",()->assetCommand.accept("Watch",0L));assetButtons.add(watch);buttons.add(watch);
+        Runnable updateAssetActions=()->{};
         authoringControls.add(updateAssetActions);
         mode.addActionListener(event->updateAssetActions.run());
         list.addListSelectionListener(event->updateAssetActions.run());
@@ -558,6 +512,8 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
             }
             // A rename/revision refresh must keep the native selection and the
             // user's expanded folders/scroll, without emitting another edit.
+            Set<String> selectedKeys=new HashSet<>();if(tree.getSelectionPaths()!=null)for(var path:tree.getSelectionPaths())selectedKeys.add(treeKey(path));
+            Set<String> listKeys=new HashSet<>();for(Object row:list.getSelectedValuesList()){var item=explorerItem(row);if(item!=null)listKeys.add(item.key());}
             Set<String> expanded=new HashSet<>();
             var oldRoot=new TreePath(tree.getModel().getRoot());var paths=tree.getExpandedDescendants(oldRoot);
             if(paths!=null)while(paths.hasMoreElements())expanded.add(treeKey(paths.nextElement()));
@@ -565,7 +521,7 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
             Point listScroll=list.getParent() instanceof JViewport viewport?viewport.getViewPosition():null;
             boolean wasRefreshing=refreshing;refreshing=true;
             try{
-                tree.setModel(new DefaultTreeModel(root));tree.expandRow(0);
+                tree.setModel(new DefaultTreeModel(root){@Override public void valueForPathChanged(TreePath path,Object value){var item=explorerItem(((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject());if(item!=null&&explorerEditable(item))explorerEdit("rename",List.of(item),String.valueOf(value));}});tree.expandRow(0);
                 listing.clear();
                 for(var rows=root.depthFirstEnumeration();rows.hasMoreElements();){var item=(DefaultMutableTreeNode)rows.nextElement();if(item.getUserObject() instanceof DocRow||item.getUserObject() instanceof AssetRow||item.getUserObject() instanceof SourceRow)listing.addElement(item.getUserObject());}
                 if(snapshot!=null)for(var nodes=root.depthFirstEnumeration();nodes.hasMoreElements();){
@@ -576,6 +532,9 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
                         try{tree.setSelectionPath(path);}finally{tree.setExpandsSelectedPaths(expand);}
                     }
                 }
+                var restore=new ArrayList<TreePath>();for(var it=root.depthFirstEnumeration();it.hasMoreElements();){var node=(DefaultMutableTreeNode)it.nextElement();var path=new TreePath(node.getPath());if(selectedKeys.contains(treeKey(path)))restore.add(path);}
+                if(!restore.isEmpty())tree.setSelectionPaths(restore.toArray(TreePath[]::new));
+                var indices=new ArrayList<Integer>();for(int i=0;i<listing.size();i++){var item=explorerItem(listing.get(i));if(item!=null&&listKeys.contains(item.key()))indices.add(i);}list.setSelectedIndices(indices.stream().mapToInt(Integer::intValue).toArray());
                 if(shownFolders.isEmpty()&&!folders.keySet().equals(Set.of("")))tree.expandPath(new TreePath(assets.getPath()));
                 if(!shownFolders.isEmpty())
                     folders.forEach((key,node)->{
@@ -595,7 +554,8 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
             if(selectedRow.get() instanceof SourceRow){updateAssetActions.run();return;}
             int selectedIndex=-1;
             for(int i=0;i<listing.size();i++){Object row=listing.get(i);if(row instanceof DocRow doc&&doc.document().id()==value.selection().document() || row instanceof AssetRow asset&&value.selection().kind()==6&&asset.asset().id()==value.selection().element()){selectedIndex=i;break;}}
-            list.setSelectedIndex(selectedIndex);
+            if(list.getSelectedIndices().length<=1)list.setSelectedIndex(selectedIndex);
+            if(tree.getSelectionCount()>1){updateAssetActions.run();return;}
             var root=(DefaultMutableTreeNode)tree.getModel().getRoot();
             for(var nodes=root.depthFirstEnumeration();nodes.hasMoreElements();){
                 var node=(DefaultMutableTreeNode)nodes.nextElement();
@@ -614,34 +574,16 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
             else if(chosen instanceof DefaultMutableTreeNode node&&node.getUserObject() instanceof AssetRow row)select.accept(new Bridge.Selection(6,0,row.asset().id()));
             else if(chosen==tree.getModel().getRoot())select.accept(new Bridge.Selection(0,0,0));
         });
-        tree.addMouseListener(new MouseAdapter() {
-            @Override public void mousePressed(MouseEvent event){folderMenu(event);}
-            @Override public void mouseReleased(MouseEvent event){folderMenu(event);}
-            private void folderMenu(MouseEvent event){
-                if(!event.isPopupTrigger()||!interactive||snapshot==null)return;
-                var path=tree.getPathForLocation(event.getX(),event.getY());
-                if(path==null||!(path.getLastPathComponent() instanceof DefaultMutableTreeNode node))return;
-                if(node.getUserObject() instanceof SourceRow source){tree.setSelectionPath(path);var menu=new JPopupMenu();menuItem(menu,"Open C#",()->openSource.accept(source.path(),false));menuItem(menu,"Open With…",()->openSource.accept(source.path(),true));for(String action:List.of("copy","cut","duplicate","rename","delete"))menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1),()->sourceFileAction.accept(action,source.path()));menu.show(tree,event.getX(),event.getY());return;}
-                if(node==tree.getModel().getRoot()||node.getUserObject() instanceof ProjectFolderRow){
-                    String directory=node.getUserObject() instanceof ProjectFolderRow row?row.path():"";
-                    var menu=new JPopupMenu();menuItem(menu,"New Folder…",()->newProjectFolder.accept(directory));
-                    if(!directory.isEmpty()&&!directory.equals("Documents")&&!directory.equals("Scripts"))for(String action:List.of("rename","move","delete"))menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1)+" Folder…",()->folderAction.accept(action,directory));
-                    if(directory.equals("Scripts")||directory.startsWith("Scripts/")){menuItem(menu,"New C# Class…",newSource);menuItem(menu,"Paste C# Source…",()->sourceFileAction.accept("paste",null));}
-                    menu.show(tree,event.getX(),event.getY());return;
-                }
-                if(newContentFolder==null||snapshot.storage()!=2||snapshot.playing()||!(node.getUserObject() instanceof FolderRow folder))return;
-                var menu=new JPopupMenu();
-                menuItem(menu,"New Folder…",()->newContentFolder.accept(folder.path()));
-                if(!folder.path().isEmpty())for(String action:List.of("rename","move","delete"))menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1)+" Folder…",()->folderAction.accept(action,"Content/"+folder.path()));
-                menu.show(tree,event.getX(),event.getY());
-            }
-            @Override public void mouseClicked(MouseEvent event) {
-            if (event.getClickCount() != 2 || refreshing) return;
-            Object selected = tree.getLastSelectedPathComponent();
-            if (selected instanceof DefaultMutableTreeNode node && node.getUserObject() instanceof DocRow row) {
-                openDocument.accept(row.document());
-            }else if(selected instanceof DefaultMutableTreeNode node&&node.getUserObject() instanceof SourceRow source)openSource.accept(source.path(),false);
-        } });
+        Supplier<List<ExplorerItem>> selectedItems=()->{
+            if(mode.getSelectedItem().equals("Tree")){var paths=tree.getSelectionPaths();return paths==null?List.of():Arrays.stream(paths).map(path->explorerItem(((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject())).filter(Objects::nonNull).toList();}
+            return list.getSelectedValuesList().stream().map(this::explorerItem).filter(Objects::nonNull).toList();
+        };
+        installExplorerKeys(tree,selectedItems,()->explorerDirectory(selectedRow.get()));
+        installExplorerKeys(list,selectedItems,()->explorerDirectory(selectedRow.get()));
+        installExplorerMouse(tree,list,listing,selectedItems);
+        if(!GraphicsEnvironment.isHeadless()){
+            installExplorerTransfer(tree,selectedItems);installExplorerTransfer(list,selectedItems);
+        }
         return panel;
     }
     private static DefaultMutableTreeNode projectFolder(Map<String,DefaultMutableTreeNode> folders,String path){
@@ -669,7 +611,7 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
         }
         return parent;
     }
-    private record AssetRow(Bridge.Asset asset){@Override public String toString(){return asset.path()+(asset.trashed()?" · Trash":!asset.present()?" · Missing":"");}}
+    private record AssetRow(Bridge.Asset asset){@Override public String toString(){return asset.path().substring(asset.path().lastIndexOf('/')+1)+(asset.trashed()?" · Trash":!asset.present()?" · Missing":"");}}
     private record DocRow(Bridge.Document document) { @Override public String toString() { String type=switch(document.kind()){case 0->"Scene";case 1->"Prefab";case 2->"Graph";default->"Document";};return document.name().equals(type)?type:document.name()+" · "+type; } }
     private String nodeLabel(Bridge.Node row){
         if(row.kind()==3&&snapshot!=null)for(var graph:snapshot.graphs())if(graph.document()==row.document())
@@ -692,6 +634,7 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
     }
     private JComponent hierarchy() {
         JTree tree = new JTree();
+        installSceneKeys(tree,()->snapshot==null?0:snapshot.selection().document(),()->snapshot==null?0:snapshot.selection().kind()==1?snapshot.selection().element():0);
         Map<Bridge.Selection,DefaultMutableTreeNode> selections=new HashMap<>();
         structure(value -> {
             DefaultMutableTreeNode root = new DefaultMutableTreeNode("World / Scene / Prefab");
@@ -733,7 +676,7 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
         observe(value->{
             var node=value==null?null:selections.get(value.selection());
             var path=node==null?null:new TreePath(node.getPath());
-            if(!Objects.equals(tree.getSelectionPath(),path)){
+            if(!(tree.getSelectionCount()>1&&tree.isPathSelected(path))&&!Objects.equals(tree.getSelectionPath(),path)){
                 tree.setExpandsSelectedPaths(false);
                 tree.setSelectionPath(path);
                 tree.setExpandsSelectedPaths(true);
@@ -965,29 +908,6 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
         String path=asset.path().toLowerCase(Locale.ROOT);
         return !asset.trashed()&&!asset.cookedKey().isEmpty()&&(path.endsWith(".png")||path.endsWith(".webp"));
     }
-    private void installResourceDrag(JComponent source,Supplier<Object> selection){
-        source.setTransferHandler(new TransferHandler(){
-            @Override public int getSourceActions(JComponent component){return COPY;}
-            @Override protected Transferable createTransferable(JComponent component){
-                if(!canPlaceResource())return null;
-                Object row=selection.get();
-                ResourceDrag data;
-                if(row instanceof DocRow doc&&doc.document().kind()==1)
-                    data=new ResourceDrag(generation,snapshot.project(),snapshot.revision(),doc.document().id(),true);
-                else if(row instanceof AssetRow asset&&texture(asset.asset()))
-                    data=new ResourceDrag(generation,snapshot.project(),snapshot.revision(),asset.asset().id(),false);
-                else return null;
-                return new Transferable(){
-                    public DataFlavor[] getTransferDataFlavors(){return new DataFlavor[]{RESOURCE_FLAVOR};}
-                    public boolean isDataFlavorSupported(DataFlavor flavor){return RESOURCE_FLAVOR.equals(flavor);}
-                    public Object getTransferData(DataFlavor flavor)throws UnsupportedFlavorException{
-                        if(!isDataFlavorSupported(flavor))throw new UnsupportedFlavorException(flavor);
-                        return data;
-                    }
-                };
-            }
-        });
-    }
     private void installSceneDrop(String panel,NativeViewport viewport){
         final Runnable clearReference=()->{viewport.referenceHover(0);viewport.setCursor(Cursor.getDefaultCursor());};
         new DropTarget(viewport,DnDConstants.ACTION_COPY,new DropTargetAdapter(){
@@ -1194,16 +1114,109 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
             return snapshot.nodes().stream().filter(n->n.document()==row.document().id()&&n.kind()==2&&n.parent()==0).map(Bridge.Node::selection).findFirst().orElse(null);
         return null;
     }
-    private void sourceKeys(JComponent component,Supplier<Object> selected){
-        for(String[] binding:new String[][]{{"control C","copy"},{"control X","cut"},{"control V","paste"},{"control D","duplicate"},{"DELETE","delete"}}){
-            var key=KeyStroke.getKeyStroke(binding[0]);Object previous=component.getInputMap().get(key);var old=previous==null?null:component.getActionMap().get(previous);String name="source."+binding[1];
-            component.getInputMap().put(key,name);component.getActionMap().put(name,new AbstractAction(){public void actionPerformed(ActionEvent e){Object row=selected.get();
-                if(row instanceof SourceRow source)sourceFileAction.accept(binding[1],source.path());
-                else if(binding[1].equals("paste")&&row instanceof ProjectFolderRow folder&&folder.path().equals("Scripts"))sourceFileAction.accept("paste",null);
-                else if(old!=null)old.actionPerformed(e);
-            }});
+    public record ExplorerItem(String kind,long id,String path){public String key(){return kind+":"+Long.toUnsignedString(id)+":"+path;}}
+    public record ExplorerEdit(long generation,long project,String action,List<ExplorerItem> items,String target){public ExplorerEdit{items=List.copyOf(items);}}
+    private Function<ExplorerEdit,java.util.concurrent.CompletableFuture<Bridge.Reply>> explorerCommand=edit->java.util.concurrent.CompletableFuture.completedFuture(null);
+    public void explorerCommands(Function<ExplorerEdit,java.util.concurrent.CompletableFuture<Bridge.Reply>> command){explorerCommand=command;}
+    private ExplorerItem explorerItem(Object row){
+        if(row instanceof DocRow doc)return new ExplorerItem("document",doc.document().id(),"Documents/"+doc.document().name());
+        if(row instanceof AssetRow asset)return new ExplorerItem("asset",asset.asset().id(),asset.asset().path());
+        if(row instanceof SourceRow source&&snapshot!=null)return new ExplorerItem("source",0,java.nio.file.Path.of(snapshot.path()).getParent().relativize(source.path()).toString().replace('\\','/'));
+        if(row instanceof FolderRow folder)return new ExplorerItem("folder",0,folder.path().isEmpty()?"Content":"Content/"+folder.path());
+        if(row instanceof ProjectFolderRow folder)return new ExplorerItem("folder",0,folder.path());
+        return null;
+    }
+    private String explorerDirectory(Object row){var item=explorerItem(row);if(item==null)return "";if(item.kind().equals("folder"))return item.path();int slash=item.path().lastIndexOf('/');return slash<0?"":item.path().substring(0,slash);}
+    private boolean explorerWritable(){return interactive&&snapshot!=null&&snapshot.storage()==2&&!snapshot.playing();}
+    private static boolean explorerEditable(ExplorerItem item){return !item.kind().equals("folder")||item.path().contains("/");}
+    private boolean explorerAllowed(String action,List<ExplorerItem> items){return snapshot!=null&&items.stream().allMatch(item->explorerEditable(item)&&(!action.equals("delete")||!item.kind().equals("document")||item.id()!=snapshot.entry())&&(!item.kind().equals("asset")||snapshot.assets().stream().anyMatch(asset->asset.id()==item.id()&&!asset.trashed())));}
+    private void explorerEdit(String action,List<ExplorerItem> items,String target){if(explorerWritable())explorerCommand.apply(new ExplorerEdit(generation,snapshot.project(),action,items,target)).exceptionally(error->{SwingUtilities.invokeLater(()->history(error.getMessage(),2));return null;});}
+    private void installExplorerKeys(JComponent component,Supplier<List<ExplorerItem>> selected,Supplier<String> folder){
+        for(String[] binding:new String[][]{{"control C","copy"},{"control X","cut"},{"control V","paste"},{"control D","duplicate"},{"DELETE","delete"},{"F2","rename"}}){
+            String action="explorer."+binding[1];component.getInputMap().put(KeyStroke.getKeyStroke(binding[0]),action);
+            component.getActionMap().put(action,new AbstractAction(){public void actionPerformed(ActionEvent event){var items=selected.get();if(!binding[1].equals("paste")&&!explorerAllowed(binding[1],items))return;if(binding[1].equals("rename")&&component instanceof JTree tree&&items.size()==1&&explorerEditable(items.getFirst())){tree.startEditingAtPath(tree.getSelectionPath());return;}if(binding[1].equals("paste")||!items.isEmpty())explorerEdit(binding[1],items,folder.get());}});
         }
     }
+    private JPopupMenu explorerMenu(List<ExplorerItem> items,String folder){
+        JPopupMenu menu=new JPopupMenu();
+        if(items.size()==1){var item=items.getFirst();if(item.kind().equals("document"))menuItem(menu,"Open",()->snapshot.documents().stream().filter(d->d.id()==item.id()).findFirst().ifPresent(openDocument));
+            if(item.kind().equals("source")){menuItem(menu,"Open C#",()->openSource.accept(java.nio.file.Path.of(snapshot.path()).getParent().resolve(item.path()),false));menuItem(menu,"Open With…",()->openSource.accept(java.nio.file.Path.of(snapshot.path()).getParent().resolve(item.path()),true));}
+        }
+        boolean directory=items.isEmpty()||items.size()==1&&items.getFirst().kind().equals("folder");
+        if(directory){
+            if(folder.isEmpty()||folder.equals("Documents")||folder.startsWith("Documents/")){
+                var create=new JMenu("New Document");create.setEnabled(documentCommandsEnabled);for(int kind=0;kind<3;kind++){final int type=kind;var item=new JMenuItem(new String[]{"Scene","Prefab","Graph"}[kind]);item.addActionListener(e->explorerEdit("new:"+type,List.of(),folder));create.add(item);}menu.add(create);
+            }
+            if(folder.isEmpty()||folder.equals("Scripts")||folder.startsWith("Scripts/"))menuItem(menu,"New C# Class…",()->explorerEdit("new-source",List.of(),folder));
+            menuItem(menu,"New Folder…",()->explorerEdit("new-folder",List.of(),folder));
+            if(folder.equals("Content")||folder.startsWith("Content/"))menuItem(menu,"Import Here…",()->explorerEdit("import",List.of(),folder));
+            menuItem(menu,"Paste",()->explorerEdit("paste",items,folder));
+        }
+        var editable=items.stream().filter(UiPanels::explorerEditable).toList();
+        if(!editable.isEmpty()){
+            menu.addSeparator();for(String action:List.of("copy","cut","duplicate","delete")){menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1),()->explorerEdit(action,editable,folder));menu.getComponent(menu.getComponentCount()-1).setEnabled(explorerAllowed(action,editable));}
+            if(editable.size()==1){menuItem(menu,"Rename…",()->explorerEdit("rename",editable,""));menu.getComponent(menu.getComponentCount()-1).setEnabled(explorerAllowed("rename",editable));menuItem(menu,"Move…",()->explorerEdit("move",editable,""));menu.getComponent(menu.getComponentCount()-1).setEnabled(explorerAllowed("move",editable));}
+        }
+        if(items.size()==1&&items.getFirst().kind().equals("asset")){var item=items.getFirst();for(String action:List.of("Reimport","Restore","Assign to Prefab")){menuItem(menu,action,()->assetCommand.accept(action,item.id()));var asset=snapshot.assets().stream().filter(a->a.id()==item.id()).findFirst().orElse(null);menu.getComponent(menu.getComponentCount()-1).setEnabled(asset!=null&&(action.equals("Restore")?asset.trashed():!asset.trashed()&&(!action.equals("Assign to Prefab")||texture(asset))));}}
+        menu.setEnabled(explorerWritable());for(var child:menu.getComponents())child.setEnabled(child.isEnabled()&&explorerWritable());return menu;
+    }
+    private void installExplorerMouse(JTree tree,JList<Object> list,DefaultListModel<Object> listing,Supplier<List<ExplorerItem>> selected){
+        final javax.swing.Timer[] rename={null};final Object[] pressed={null};final boolean[] already={false};final long[] selectionChanged={0};
+        tree.addTreeSelectionListener(e->{if(!refreshing)selectionChanged[0]=System.nanoTime();});list.addListSelectionListener(e->{if(!refreshing)selectionChanged[0]=System.nanoTime();});
+        var mouse=new MouseAdapter(){
+            private void popup(MouseEvent event){
+                if(!event.isPopupTrigger()||!explorerWritable())return;if(rename[0]!=null)rename[0].stop();
+                Object row=null;
+                if(event.getComponent()==tree){var path=tree.getPathForLocation(event.getX(),event.getY());if(path==null)tree.clearSelection();else{if(!tree.isPathSelected(path))tree.setSelectionPath(path);row=((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();}}
+                else{int index=list.locationToIndex(event.getPoint());if(index>=0&&list.getCellBounds(index,index).contains(event.getPoint())){if(!list.isSelectedIndex(index))list.setSelectedIndex(index);row=listing.get(index);}else list.clearSelection();}
+                explorerMenu(selected.get(),explorerDirectory(row)).show(event.getComponent(),event.getX(),event.getY());
+            }
+            @Override public void mousePressed(MouseEvent event){
+                if(rename[0]!=null)rename[0].stop();popup(event);already[0]=false;pressed[0]=null;
+                if(!SwingUtilities.isLeftMouseButton(event)||event.isControlDown()||event.isShiftDown())return;
+                if(event.getComponent()==tree){var path=tree.getPathForLocation(event.getX(),event.getY());if(path!=null){already[0]=tree.isPathSelected(path)&&tree.getSelectionCount()==1&&System.nanoTime()-selectionChanged[0]>500_000_000L;pressed[0]=((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();}}
+                else{int i=list.locationToIndex(event.getPoint());if(i>=0&&list.getCellBounds(i,i).contains(event.getPoint())){already[0]=list.isSelectedIndex(i)&&list.getSelectedIndices().length==1&&System.nanoTime()-selectionChanged[0]>500_000_000L;pressed[0]=listing.get(i);}}
+            }
+            @Override public void mouseReleased(MouseEvent event){popup(event);}
+            @Override public void mouseClicked(MouseEvent event){
+                if(!SwingUtilities.isLeftMouseButton(event)||event.isControlDown()||event.isShiftDown())return;
+                var item=explorerItem(pressed[0]);if(item==null)return;
+                if(event.getClickCount()==2){if(rename[0]!=null)rename[0].stop();if(pressed[0] instanceof DocRow doc)openDocument.accept(doc.document());else if(pressed[0] instanceof SourceRow source)openSource.accept(source.path(),false);return;}
+                if(already[0]&&explorerEditable(item)){
+                    rename[0]=new javax.swing.Timer(550,e->{if(selected.get().size()==1&&selected.get().getFirst().key().equals(item.key())){if(event.getComponent()==tree)tree.startEditingAtPath(tree.getSelectionPath());else explorerEdit("rename",List.of(item),"");}});rename[0].setRepeats(false);rename[0].start();
+                }
+            }
+        };tree.addMouseListener(mouse);list.addMouseListener(mouse);
+    }
+    private record ExplorerTransfer(long generation,long project,List<ExplorerItem> items){}
+    private static final DataFlavor EXPLORER_FLAVOR=localFlavor(ExplorerTransfer.class,"Project Explorer files");
+    private void installExplorerTransfer(JComponent component,Supplier<List<ExplorerItem>> selected){
+        if(component instanceof JTree tree){tree.setDragEnabled(true);tree.setDropMode(DropMode.ON);}else if(component instanceof JList<?> list){list.setDragEnabled(true);list.setDropMode(DropMode.ON);}
+        component.setTransferHandler(new TransferHandler(){
+            public int getSourceActions(JComponent source){return COPY_OR_MOVE;}
+            protected Transferable createTransferable(JComponent source){
+                if(!explorerWritable())return null;var items=selected.get().stream().filter(UiPanels::explorerEditable).toList();if(items.isEmpty())return null;
+                var data=new ExplorerTransfer(generation,snapshot.project(),items);ResourceDrag resource=null;
+                if(items.size()==1){var item=items.getFirst();if(item.kind().equals("document")&&snapshot.documents().stream().anyMatch(d->d.id()==item.id()&&d.kind()==1))resource=new ResourceDrag(generation,snapshot.project(),snapshot.revision(),item.id(),true);
+                    else if(item.kind().equals("asset")&&snapshot.assets().stream().anyMatch(a->a.id()==item.id()&&texture(a)))resource=new ResourceDrag(generation,snapshot.project(),snapshot.revision(),item.id(),false);}
+                final ResourceDrag placed=resource;
+                return new Transferable(){public DataFlavor[] getTransferDataFlavors(){return placed==null?new DataFlavor[]{EXPLORER_FLAVOR}:new DataFlavor[]{EXPLORER_FLAVOR,RESOURCE_FLAVOR};}public boolean isDataFlavorSupported(DataFlavor f){return f.equals(EXPLORER_FLAVOR)||placed!=null&&f.equals(RESOURCE_FLAVOR);}public Object getTransferData(DataFlavor f)throws UnsupportedFlavorException{if(f.equals(EXPLORER_FLAVOR))return data;if(placed!=null&&f.equals(RESOURCE_FLAVOR))return placed;throw new UnsupportedFlavorException(f);}};
+            }
+            private String destination(TransferSupport support){Object row=null;if(component instanceof JTree tree){var path=((JTree.DropLocation)support.getDropLocation()).getPath();if(path!=null)row=((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();}else{int i=((JList.DropLocation)support.getDropLocation()).getIndex();if(i>=0&&i<((JList<?>)component).getModel().getSize())row=((JList<?>)component).getModel().getElementAt(i);}var item=explorerItem(row);return item!=null&&item.kind().equals("folder")?item.path():null;}
+            public boolean canImport(TransferSupport support){if(!explorerWritable()||!support.isDrop()||!support.isDataFlavorSupported(EXPLORER_FLAVOR))return false;String folder=destination(support);if(folder==null)return false;try{var data=(ExplorerTransfer)support.getTransferable().getTransferData(EXPLORER_FLAVOR);if(data.generation()!=generation||data.project()!=snapshot.project())return false;for(var item:data.items()){String mount=item.kind().equals("document")?"Documents":item.kind().equals("asset")?"Content":item.kind().equals("source")?"Scripts":item.path().startsWith("Content/")?"Content":item.path().startsWith("Documents/")?"Documents":item.path().startsWith("Scripts/")?"Scripts":"";if(!mount.isEmpty()&&!folder.equals(mount)&&!folder.startsWith(mount+"/")||item.kind().equals("folder")&&(folder.equals(item.path())||folder.startsWith(item.path()+"/")))return false;}}catch(Exception error){return false;}support.setDropAction(MOVE);return true;}
+            public boolean importData(TransferSupport support){if(!canImport(support))return false;try{var data=(ExplorerTransfer)support.getTransferable().getTransferData(EXPLORER_FLAVOR);if(data.generation()!=generation||data.project()!=snapshot.project())return false;explorerEdit("drop",data.items(),destination(support));return true;}catch(Exception error){history(error.getMessage(),2);return false;}}
+        });
+    }
+    private void installSceneKeys(Component component,LongSupplier document,LongSupplier node){
+        var handler=new KeyAdapter(){public void keyPressed(KeyEvent event){
+            String action=event.isControlDown()?switch(event.getKeyCode()){case KeyEvent.VK_C->"copy";case KeyEvent.VK_X->"cut";case KeyEvent.VK_V->"paste";default->null;}:event.getKeyCode()==KeyEvent.VK_DELETE?"delete-many":null;
+            if(action==null||!canEditHierarchy()||snapshot==null)return;long doc=document.getAsLong(),id=node.getAsLong();if(doc==0||snapshot.documents().stream().noneMatch(d->d.id()==doc&&d.kind()==0)||id==0&&!action.equals("paste"))return;
+            var ids=new ArrayList<String>();if(component instanceof JTree tree&&tree.getSelectionPaths()!=null)for(var path:tree.getSelectionPaths()){var target=hierarchyTarget(path);if(target!=null&&target.document()==doc&&target.element()!=0)ids.add(unsigned(target.element()));}if(ids.isEmpty()&&id!=0)ids.add(unsigned(id));
+            var args=new ArrayList<String>(List.of(action,unsigned(doc),action.equals("paste")?"0":unsigned(id)));if(!action.equals("paste"))args.add(String.join(" ",ids));
+            gestureCommand.apply(new GestureEdit(generation,snapshot.revision(),29,args));event.consume();
+        }};component.addKeyListener(handler);
+    }
+
     private static String unsigned(long id){return Long.toUnsignedString(id);}
     private static void menuItem(JPopupMenu menu,String label,Runnable action){
         var item=new JMenuItem(label);item.addActionListener(e->action.run());menu.add(item);

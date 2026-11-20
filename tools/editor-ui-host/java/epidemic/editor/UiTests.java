@@ -257,6 +257,25 @@ public final class UiTests {
         });
         System.out.println("PASS F0.2 two immutable Explorer readers retain selected ID and collapsed folders on native rename without writing selection");
     }
+    static void explorerInteractions()throws Exception {
+        javax.swing.SwingUtilities.invokeAndWait(()->{
+            try{
+                var actions=new java.util.ArrayList<UiPanels.ExplorerEdit>();
+                var state=new Bridge.Snapshot(1,1,1,0,2,1,8,"C:/Fixture/Project.epidemicproj","Project",new Bridge.Selection(0,8,0),List.of(new Bridge.Document(8,1,0,"One"),new Bridge.Document(9,1,2,"Two")),List.of(),List.of());
+                var panels=new UiPanels(new Catalog(),new FeatureRegistry(),d->{},selection->{},()->{},()->{},kind->{},()->{});
+                panels.sessionState(1,true);panels.documentCommandsEnabled(true);
+                panels.explorerCommands(edit->{actions.add(edit);return java.util.concurrent.CompletableFuture.completedFuture(null);});panels.refresh(state);
+                var view=panels.view("project.explorer");var tree=explorerTree(view);var root=(javax.swing.tree.DefaultMutableTreeNode)tree.getModel().getRoot();var docs=(javax.swing.tree.DefaultMutableTreeNode)root.getChildAt(0);
+                tree.setSelectionPaths(new javax.swing.tree.TreePath[]{new javax.swing.tree.TreePath(((javax.swing.tree.DefaultMutableTreeNode)docs.getChildAt(0)).getPath()),new javax.swing.tree.TreePath(((javax.swing.tree.DefaultMutableTreeNode)docs.getChildAt(1)).getPath())});
+                tree.getActionMap().get("explorer.copy").actionPerformed(new java.awt.event.ActionEvent(tree,0,"copy"));require(actions.size()==1&&actions.getFirst().items().size()==2,"Explorer Ctrl+C lost multiselection");
+                panels.refresh(state,true);require(tree.getSelectionCount()==2,"Native primary selection acknowledgement collapsed multiselection");
+                var nativePath=tree.getSelectionPaths()[0];Object before=nativePath.getLastPathComponent();String label=before.toString();tree.getModel().valueForPathChanged(nativePath,"Переименовано");require(actions.getLast().action().equals("rename")&&actions.getLast().target().equals("Переименовано")&&before.toString().equals(label),"Inline rename mutated the projection before native acknowledgement");
+                var method=UiPanels.class.getDeclaredMethod("explorerMenu",java.util.List.class,String.class);method.setAccessible(true);
+                var menu=(javax.swing.JPopupMenu)method.invoke(panels,List.of(new UiPanels.ExplorerItem("folder",0,"Documents/Nested")),"Documents/Nested");
+                var create=(javax.swing.JMenu)menu.getComponent(0);create.getItem(2).doClick();require(actions.getLast().action().equals("new:2")&&actions.getLast().target().equals("Documents/Nested"),"Context New lost destination folder");
+            }catch(Exception error){throw new RuntimeException(error);}
+        });System.out.println("PASS Explorer multiselection/hotkey, primary acknowledgement and context New folder target");
+    }
     static Bridge.Field field(Bridge bridge,int kind) {
         return bridge.latest().snapshot().fields().stream().filter(f->f.kind()==kind&&f.editable()).findFirst().orElseThrow();
     }
@@ -277,7 +296,7 @@ public final class UiTests {
             root=created.snapshot().nodes().stream().filter(n->n.document()==prefab&&n.kind()==2).findFirst().orElseThrow().id();
             result(bridge.call(6));
             result(bridge.call(9,"2",Long.toUnsignedString(prefab),Long.toUnsignedString(root)));
-            require(bridge.latest().snapshot().fields().size()==4&&!bridge.latest().snapshot().dirty(),"Real scalar schema/defaults or selection dirty");
+            require(bridge.latest().snapshot().fields().size()==5&&bridge.latest().snapshot().fields().stream().anyMatch(f->f.name().endsWith("/ maximum")&&f.editable()&&f.value().equals("100"))&&!bridge.latest().snapshot().dirty(),"Real scalar schema/defaults or selection dirty");
             String[] values={"123","1.2345678901234567","false","Игрок Ω"};
             for(int kind=0;kind<4;kind++) {
                 var f=field(bridge,kind);String before=f.value();long revision=bridge.latest().snapshot().revision();
@@ -405,7 +424,7 @@ public final class UiTests {
         Path directory = Path.of(args[0]); Files.createDirectories(directory);
         Path project = directory.resolve("Game-" + System.nanoTime());
         Path executable = Path.of(System.getProperty("epidemic.ui.backend"));
-        presentation(); documentReaders(); recent(directory); compatibility(executable,directory);lifecycle(executable,directory);documents(executable,directory);scalarAndDiscard(executable,directory);scalarWidgets(executable,directory);AssetTests.run(executable,directory);
+        presentation(); documentReaders(); explorerInteractions(); recent(directory); compatibility(executable,directory);lifecycle(executable,directory);documents(executable,directory);scalarAndDiscard(executable,directory);scalarWidgets(executable,directory);AssetTests.run(executable,directory);
         try (Bridge bridge = new Bridge(executable, directory, state -> { })) {
             require(result(bridge.connect()).snapshot() == null, "Handshake created a project");
             var opened = result(bridge.call(3, project.toString(), "Новая игра"));

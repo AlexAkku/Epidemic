@@ -58,6 +58,38 @@ public final class GraphSceneTests {
             SwingUtilities.invokeAndWait(()->{require(!c.fromScene(transfer.get()),"Stale source revision survived");c.cancel();});
         } finally {SwingUtilities.invokeAndWait(c::close);}
     }
+    private static void sceneClipboard(Bridge b,Path root)throws Exception {
+        call(b,15,"0","Clipboard Scene");long scene=b.latest().snapshot().selection().document();
+        long prefab=b.latest().snapshot().documents().stream().filter(d->d.kind()==1).findFirst().orElseThrow().id();
+        call(b,33,"place",id(scene),id(prefab),"10","20");long parent=b.latest().snapshot().selection().element();
+        call(b,29,"rename",id(scene),id(parent),"Parent");call(b,29,"create",id(scene),id(parent));long child=b.latest().snapshot().selection().element();
+        call(b,33,"place",id(scene),id(prefab),"30","40");long sibling=b.latest().snapshot().selection().element();
+        String parentLabel=b.latest().snapshot().nodes().stream().filter(n->n.document()==scene&&n.id()==parent).findFirst().orElseThrow().label();
+        String selection=id(parent)+" "+id(child)+" "+id(sibling);long revision=b.latest().snapshot().revision();
+        call(b,29,"copy",id(scene),"0",selection);require(b.latest().snapshot().revision()==revision,"Copy mutated authoring");
+        call(b,29,"paste",id(scene),"0");
+        require(b.latest().snapshot().nodes().stream().filter(n->n.document()==scene&&n.kind()==1).count()==6,"Subtree+multiroot paste lost or doubled descendants");
+        long copiedParent=b.latest().snapshot().nodes().stream().filter(n->n.document()==scene&&n.kind()==1&&n.id()!=parent&&n.label().equals(parentLabel)).findFirst().orElseThrow(()->new IllegalStateException("Copied names: "+b.latest().snapshot().nodes().stream().filter(n->n.document()==scene&&n.kind()==1).map(n->n.id()+" parent="+n.parent()+" label="+n.label()).toList())).id();
+        var sourceItem=b.latest().snapshot().sceneItems().stream().filter(n->n.document()==scene&&n.id()==parent).findFirst().orElseThrow();
+        var copyItem=b.latest().snapshot().sceneItems().stream().filter(n->n.document()==scene&&n.id()==copiedParent).findFirst().orElseThrow();
+        require(sourceItem.x()==10&&sourceItem.y()==20&&copyItem.x()==sourceItem.x()&&copyItem.y()==sourceItem.y()&&copyItem.rotation()==sourceItem.rotation()&&copyItem.left()==sourceItem.left()&&copyItem.right()==sourceItem.right(),"Paste lost placement transform");
+        call(b,7);require(b.latest().snapshot().nodes().stream().filter(n->n.document()==scene&&n.kind()==1).count()==3,"Paste was not one Undo");call(b,8);
+        long beforeCut=b.latest().snapshot().revision();call(b,29,"cut",id(scene),"0",selection);call(b,29,"paste",id(scene),"0");
+        require(b.latest().snapshot().revision()==beforeCut&&b.latest().snapshot().nodes().stream().filter(n->n.document()==scene&&n.kind()==1&&(n.id()==parent||n.id()==child||n.id()==sibling)).count()==3,"Same-scene no-op Cut changed identities/history");
+        call(b,29,"cut",id(scene),"0",id(child));call(b,29,"paste",id(scene),"0");
+        require(b.latest().snapshot().nodes().stream().anyMatch(n->n.document()==scene&&n.id()==child&&n.parent()==0),"Same-scene Cut did not preserve the moved node identity");call(b,7);
+        require(b.latest().snapshot().nodes().stream().anyMatch(n->n.document()==scene&&n.id()==child&&n.parent()==parent),"Cut reparent Undo did not restore hierarchy");
+        call(b,29,"copy",id(scene),"0",selection);call(b,15,"0","Clipboard Destination");long destination=b.latest().snapshot().selection().document();call(b,29,"paste",id(destination),"0");
+        require(b.latest().snapshot().nodes().stream().filter(n->n.document()==destination&&n.kind()==1).count()==3,"Cross-scene paste lost hierarchy");
+        call(b,29,"copy",id(scene),"0",id(child));call(b,29,"paste",id(destination),"0");long detached=b.latest().snapshot().selection().element();
+        var detachedItem=b.latest().snapshot().sceneItems().stream().filter(n->n.document()==destination&&n.id()==detached).findFirst().orElseThrow();require(detachedItem.x()==10&&detachedItem.y()==20,"Copy nested child to Scene root lost world transform");call(b,7);
+        call(b,29,"delete-many",id(destination),"0",b.latest().snapshot().nodes().stream().filter(n->n.document()==destination&&n.kind()==1).map(n->id(n.id())).collect(java.util.stream.Collectors.joining(" ")));
+        require(b.latest().snapshot().nodes().stream().noneMatch(n->n.document()==destination&&n.kind()==1),"Delete-many failed");call(b,7);
+        call(b,6);call(b,10);call(b,2,root.resolve("Project.epidemicproj").toString());
+        require(b.latest().snapshot().nodes().stream().filter(n->n.document()==destination&&n.kind()==1).count()==3,"Scene clipboard commands lost Save/Open state");
+        try{call(b,29,"paste",id(destination),"0");throw new IllegalStateException("Clipboard leaked into new project lifetime");}catch(ExecutionException expected){require(expected.getCause().getMessage().contains("clipboard_empty"),"Unexpected clipboard lifetime rejection");}
+        System.out.println("PASS Scene native copy/cut/paste/delete-many, subtree identities/transforms, cross-scene, atomic history and Save/Open clipboard lifetime");
+    }
     public static void main(String[] args)throws Exception {
         Path backend=Path.of(args[0]),work=Path.of(args[1]);Files.createDirectories(work);Path root=Files.createTempDirectory(work,"fii3-").resolve("Проект");
         long scene,doc,placementA,placementB;List<Bridge.GraphNode> saved;List<Bridge.GraphEdge> edges;
@@ -102,6 +134,7 @@ public final class GraphSceneTests {
             require(graph(b,doc).nodes().equals(saved)&&graph(b,doc).edges().equals(edges),"Fresh process lost native reference payload/coordinates");
             var refs=graph(b,doc).nodes().stream().filter(n->n.reference()!=null).toList();require(refs.size()==4&&refs.stream().allMatch(Bridge.GraphNode::referenceAvailable),"Restored references not live");
             require(refs.stream().anyMatch(n->n.reference().placement()==placementA)&&refs.stream().anyMatch(n->n.reference().placement()==placementB),"Placements aliased after reopen");
+            sceneClipboard(b,root);
         }
         System.out.println("PASS F-II.3 native typed references, two placements/component/definition, preview/atomic Undo, rename/reparent/delete/restore, wrong scope/type, 100 transient cycles, duplicate/stale Drop and fresh-process Save/Open");
     }

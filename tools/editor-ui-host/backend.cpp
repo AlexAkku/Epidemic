@@ -26,6 +26,7 @@
 #include <limits>
 #include <span>
 #include <set>
+#include <map>
 #include <unordered_map>
 #include <Windows.h>
 #include <TlHelp32.h>
@@ -247,6 +248,13 @@ class Backend {
         Require(workspace_->Execute({ed::RegisterUserSchema{{},std::move(schemas)}},revision));
     }
     std::optional<ed::EditorDocument> graph_clipboard_;
+    struct SceneClipboard {
+        explicit SceneClipboard(const ed::EditorDocument &source):document(source){}
+        SceneClipboard(const SceneClipboard &)=delete;
+        SceneClipboard &operator=(const SceneClipboard &)=delete;
+        ed::EditorDocument document;std::set<std::uint64_t> nodes,roots;bool cut=false;std::uint64_t revision=0;
+    };
+    std::unique_ptr<SceneClipboard> scene_clipboard_;
     std::string graph_report_;
     std::uint64_t graph_report_document_ = 0, graph_report_revision_ = 0;
     struct ReferencePreview { ed::ReferenceCandidate candidate; std::string reason; };
@@ -449,6 +457,64 @@ class Backend {
         const auto *scene = doc ? std::get_if<Scene>(&doc->data) : nullptr;
         if (!scene)
             throw std::runtime_error("ui.scene_missing");
+        if ((args[0]=="copy"||args[0]=="cut"||args[0]=="delete-many")&&args.size()==4) {
+            auto clip=std::make_unique<SceneClipboard>(*doc);clip->cut=args[0]=="cut";clip->revision=revision;
+            for(const auto &word:GraphWords(args[3],4096)){
+                const auto id=Numeric(word);
+                if(std::none_of(scene->scene.nodes.begin(),scene->scene.nodes.end(),[&](const auto &n){return n.id.Raw()==id;}))throw std::runtime_error("ui.scene_node_missing");
+                clip->nodes.insert(id);
+            }
+            if(clip->nodes.empty())throw std::runtime_error("ui.scene_selection_empty");
+            bool changed=true;while(changed){changed=false;for(const auto &n:scene->scene.nodes)if(clip->nodes.contains(n.parent.Raw()))changed=clip->nodes.insert(n.id.Raw()).second||changed;}
+            for(const auto &n:scene->scene.nodes)if(clip->nodes.contains(n.id.Raw())&&!clip->nodes.contains(n.parent.Raw()))clip->roots.insert(n.id.Raw());
+            if(args[0]=="delete-many"){
+                std::vector<ed::Command> commands;for(auto root:clip->roots)commands.emplace_back(ed::DeleteSceneNode{document,rt::SceneNodeId{root}});
+                Require(workspace_->Execute(std::move(commands),revision));
+            }else scene_clipboard_=std::move(clip);
+            return;
+        }
+        if(args[0]=="paste"&&args.size()==3){
+            if(!scene_clipboard_)throw std::runtime_error("ui.scene_clipboard_empty");
+            const auto &clip=*scene_clipboard_;
+            if(clip.cut&&clip.revision!=revision)throw std::runtime_error("ui.scene_cut_stale_copy_again");
+            if(clip.cut&&clip.document.id==document&&clip.nodes.contains(node.Raw()))throw std::runtime_error("ui.scene_parent_cycle");
+            const auto &original=std::get<Scene>(clip.document.data);
+            auto sourceResult=epidemic::game::composition::CreateSceneComposition(original);Require(sourceResult);auto sourceSpatial=std::move(sourceResult).Value();
+            auto targetResult=epidemic::game::composition::CreateSceneComposition(*scene);Require(targetResult);auto targetSpatial=std::move(targetResult).Value();
+            auto temporary=targetSpatial.scene.nodes->CreateNode();Require(temporary);
+            if(node.IsValid())Require(targetSpatial.scene.nodes->AttachNode(temporary.Value(),targetSpatial.nodes.at(node),rt::ReparentMode::KeepLocal));
+            const auto rootLocal=[&](rt::SceneNodeId old)->rt::Transform{
+                const auto world=sourceSpatial.scene.transforms->GetWorldTransform(sourceSpatial.nodes.at(old));if(!world)throw std::runtime_error("ui.scene_clipboard_transform");
+                Require(targetSpatial.scene.transforms->SetWorldTransform(temporary.Value(),*world));
+                const auto local=targetSpatial.scene.transforms->GetLocalTransform(temporary.Value());if(!local)throw std::runtime_error("ui.scene_clipboard_transform");return *local;
+            };
+            if(clip.cut&&clip.document.id==document){
+                std::vector<ed::Command> moved;
+                for(auto root:clip.roots){auto source=std::find_if(original.scene.nodes.begin(),original.scene.nodes.end(),[&](const auto &value){return value.id.Raw()==root;});
+                    if(source->parent!=node){moved.emplace_back(ed::SetSceneParent{document,source->id,node});moved.emplace_back(ed::SetSceneTransform{document,source->id,rootLocal(source->id)});}}
+                const auto selected=*clip.roots.begin();if(!moved.empty())Require(workspace_->Execute(std::move(moved),revision));
+                scene_clipboard_.reset();(void)workspace_->Select({document,ed::UiElement::SceneNode,selected});return;
+            }
+            std::map<std::uint64_t,rt::SceneNodeId> ids;for(auto old:clip.nodes)ids.emplace(old,NewSceneNode());
+            std::vector<ed::Command> commands;std::set<std::uint64_t> added;
+            while(added.size()<ids.size()){
+                auto count=added.size();
+                for(auto child:original.scene.nodes)if(ids.contains(child.id.Raw())&&!added.contains(child.id.Raw())&&(!ids.contains(child.parent.Raw())||added.contains(child.parent.Raw()))){
+                    const auto old=child.id;
+                    if(!ids.contains(child.parent.Raw()))child.local_transform=rootLocal(old);
+                    child.id=ids.at(old.Raw());child.parent=ids.contains(child.parent.Raw())?ids.at(child.parent.Raw()):node;
+                    commands.emplace_back(ed::AddSceneNode{document,child});
+                    if(const auto name=original.node_names.find(old.Raw());name!=original.node_names.end())commands.emplace_back(ed::RenameSceneNode{document,child.id,name->second});
+                    added.insert(old.Raw());
+                    for(auto placement:original.placements)if(placement.node==old){placement.node=child.id;commands.emplace_back(ed::PlacePrefab{document,std::move(placement)});}
+                }
+                if(count==added.size())throw std::runtime_error("ui.scene_clipboard_cycle");
+            }
+            if(clip.cut)for(auto root:clip.roots)commands.emplace_back(ed::DeleteSceneNode{clip.document.id,rt::SceneNodeId{root}});
+            const auto selected=ids.at(*clip.roots.begin());Require(workspace_->Execute(std::move(commands),revision));
+            if(clip.cut)scene_clipboard_.reset();
+            (void)workspace_->Select({document,ed::UiElement::SceneNode,selected.Raw()});return;
+        }
         if (args[0] == "create" && args.size() == 3) {
             rt::SceneNodeSnapshot child;
             child.id = NewSceneNode();
@@ -694,7 +760,7 @@ class Backend {
     void Reset() {
         StopScripts();workspace_.reset();Require(schema_.components.RegisterDescriptions({}));
         drag_.Cancel();
-        reference_preview_.clear();reference_preview_revision_=0;graph_clipboard_.reset(); graph_report_.clear(); graph_report_document_=0; graph_report_revision_=0;
+        reference_preview_.clear();reference_preview_revision_=0;graph_clipboard_.reset(); scene_clipboard_.reset(); graph_report_.clear(); graph_report_document_=0; graph_report_revision_=0;
         projected_source_.reset();
         scene_projections_.clear();
         thumbnails_.Clear();

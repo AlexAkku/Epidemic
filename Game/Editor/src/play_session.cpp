@@ -67,7 +67,10 @@ runtime::simulation::SimulationServices Simulation(const runtime::TimeServices &
     runtime::simulation::SimulationDependencies dependencies;
     dependencies.clock = std::make_shared<Clock>(time.clock);
     auto services = Take(runtime::simulation::CreateSimulationServices({}, dependencies));
-    services.scheduler->SetBudget({16, 512});
+    // Game time must not advance merely because a sibling used an editor-wide
+    // work slice. Every ready activation receives its own bounded VM quantum
+    // (GraphScheduleOptions); max-active and per-task limits still apply.
+    services.scheduler->SetBudget({0, 0});
     return services;
 }
 

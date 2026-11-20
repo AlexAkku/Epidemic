@@ -174,6 +174,32 @@ public final class ScriptWorkspace implements AutoCloseable {
         refresh();if(!action.equals("delete"))for(var path:reopened)openBuiltIn(to.resolve(path),1);
         status(action.equals("delete")?"Folder retained in "+base.relativize(to):"Folder moved · Rebuild Required");
     }
+    void transferSource(String relative,String destination,boolean deleting,boolean moving)throws Exception{
+        if(snapshot.get()==null||snapshot.get().playing()||buildActive())throw new IOException("Stop Play/build first");
+        Path base=root.get().toRealPath(),from=checked(base.resolve(relative));
+        VirtualFile file=LocalFileSystem.getInstance().refreshAndFindFileByNioFile(from);if(file==null)throw new IOException("Source missing");
+        var known=sources.get(file);if(known!=null)save(known);
+        Path to;
+        if(deleting){Path privateRoot=base.resolve(".epidemic");if(!privateRoot.toRealPath().equals(privateRoot))throw new IOException("Linked private directory");Path trash=privateRoot.resolve("FolderTrash");if(Files.exists(trash)&&!trash.toRealPath().equals(trash))throw new IOException("Linked trash");to=trash.resolve(UUID.randomUUID().toString()).resolve(from.getFileName());Files.createDirectories(to.getParent());}
+        else{to=base.resolve(destination).normalize();if(Path.of(destination).isAbsolute()||!to.startsWith(base.resolve("Scripts"))||!to.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".cs")||Files.exists(to)||!to.getParent().toRealPath().equals(to.getParent()))throw new IOException("Choose a new .cs path in Scripts without links");}
+        VirtualFile parent=LocalFileSystem.getInstance().refreshAndFindFileByNioFile(to.getParent());if(parent==null)throw new IOException("Destination missing");
+        boolean reopen=known!=null&&(moving||deleting);if(reopen){closeEverywhere(file);sources.remove(file);}Path target=to;
+        try{WriteCommandAction.runWriteCommandAction(project,()->{try{if(moving||deleting){if(file.getParent().equals(parent))file.rename(this,target.getFileName().toString());else file.move(this,parent);}else file.copy(this,parent,target.getFileName().toString());}catch(IOException error){throw new UncheckedIOException(error);}});}
+        catch(UncheckedIOException error){if(reopen)openBuiltIn(from,1);throw error.getCause();}
+        refresh();if(reopen&&!deleting)openBuiltIn(to,1);status("Source changed · Rebuild Required");
+    }
+    void copyFolder(String relative,String destination)throws Exception{
+        if(snapshot.get()==null||snapshot.get().playing()||buildActive())throw new IOException("Stop Play/build first");
+        Path base=root.get().toRealPath(),from=checkedFolder(base,relative),to=base.resolve(destination).normalize();
+        if(Path.of(destination).isAbsolute()||!to.startsWith(base)||to.startsWith(from)||Files.exists(to)||!to.getParent().toRealPath().equals(to.getParent()))throw new IOException("Invalid/conflicting folder destination");
+        String mount=base.relativize(to).getName(0).toString();
+        if(relative.startsWith("Scripts/")&&!to.startsWith(base.resolve("Scripts"))||!relative.startsWith("Scripts/")&&Set.of("Scripts","Content","Documents","ProjectData","Cache").stream().anyMatch(m->m.equalsIgnoreCase(mount)))throw new IOException("Keep folders in their owning mount");
+        for(var part:base.relativize(to))if(part.toString().startsWith("."))throw new IOException("Private destination");
+        for(var known:new ArrayList<>(sources.values()))if(known.path().startsWith(from))save(known);
+        try(var entries=Files.walk(from)){for(var it=entries.iterator();it.hasNext();){Path file=it.next(),out=to.resolve(from.relativize(file));if(Files.isDirectory(file))Files.createDirectory(out);else Files.copy(file,out);}}
+        LocalFileSystem.getInstance().refreshAndFindFileByNioFile(to);refresh();status("Folder copied · Rebuild Required");
+    }
+
     private Path fileClipboard;private boolean cutFile;
     public void fileAction(String action,Path selected){try{
         if(action.equals("copy")||action.equals("cut")){fileClipboard=checked(selected);cutFile=action.equals("cut");status(cutFile?"Source cut; choose Paste in Scripts":"Source copied; choose Paste in Scripts");return;}
@@ -202,8 +228,9 @@ public final class ScriptWorkspace implements AutoCloseable {
         }
         refresh();status("Sources changed · Rebuild Required");
     }catch(Exception error){fail(error);}}
-    public void newClass(){String name=JOptionPane.showInputDialog(null,"Class name (a C# identifier)","New C# Class",JOptionPane.PLAIN_MESSAGE);if(name==null)return;
-        try{if(!name.matches("[\\p{L}_][\\p{L}\\p{N}_]{0,63}"))throw new IOException("Enter a C# class identifier");Path base=root.get().toRealPath();Path folder=base.resolve("Scripts");Files.createDirectories(folder);if(!folder.toRealPath().equals(base.resolve("Scripts")))throw new IOException("Scripts points outside project");Path file=folder.resolve(name+".cs");Files.writeString(file,template(name),StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW);refresh();open(file,1,false);}catch(Exception error){fail(error);}}
+    public void newClass(){newClass("Scripts");}
+    public void newClass(String relative){String name=JOptionPane.showInputDialog(null,"Class name (a C# identifier)","New C# Class",JOptionPane.PLAIN_MESSAGE);if(name==null)return;
+        try{if(!name.matches("[\\p{L}_][\\p{L}\\p{N}_]{0,63}"))throw new IOException("Enter a C# class identifier");Path base=root.get().toRealPath();Path folder=base.resolve(relative).normalize();if(!folder.startsWith(base.resolve("Scripts")))throw new IOException("Choose a Scripts folder");Files.createDirectories(folder);if(!folder.toRealPath().equals(folder))throw new IOException("Scripts points outside project");Path file=folder.resolve(name+".cs");Files.writeString(file,template(name),StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW);refresh();open(file,1,false);}catch(Exception error){fail(error);}}
     public void choose(){var picker=new JFileChooser(root.get()==null?null:root.get().resolve("Scripts").toFile());picker.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("C# source","cs"));if(picker.showOpenDialog(null)==JFileChooser.APPROVE_OPTION)open(picker.getSelectedFile().toPath(),1,false);}
     public void open(Path path,int line,boolean openWith){try{
         path=checked(path);String choice=preferences.get(projectKey(),preferences.get("choice","built-in"));
@@ -338,6 +365,14 @@ public final class ScriptWorkspace implements AutoCloseable {
         editFolder("delete","Scripts/Destination/Переименовано","");
         if(Files.exists(directory.resolve("Destination/Переименовано")))throw new IOException("Source folder delete left active sources");
         try{checkedFolder(root.get(),"ProjectData");throw new IllegalStateException("Service folder accepted");}catch(IOException expected){}
+        Path files=directory.resolve("Destination");Files.createDirectories(files.resolve("Sub"));Files.writeString(files.resolve("Original.cs"),"// file transfer\n");openBuiltIn(files.resolve("Original.cs"),1);
+        transferSource("Scripts/Destination/Original.cs","Scripts/Destination/Copy.cs",false,false);
+        transferSource("Scripts/Destination/Original.cs","Scripts/Destination/Sub/Original.cs",false,true);
+        copyFolder("Scripts/Destination","Scripts/Folder Copy");
+        if(!Files.readString(directory.resolve("Folder Copy/Sub/Original.cs")).contains("file transfer"))throw new IOException("Folder copy lost source bytes");
+        editFolder("delete","Scripts/Folder Copy","");
+        transferSource("Scripts/Destination/Copy.cs","",true,false);transferSource("Scripts/Destination/Sub/Original.cs","",true,false);
+        Files.delete(files.resolve("Sub"));
         Files.delete(directory.resolve("Destination"));
         var released=new CompletableFuture<Void>();
         var timer=new javax.swing.Timer(50,new java.awt.event.ActionListener(){int attempts;public void actionPerformed(java.awt.event.ActionEvent event){

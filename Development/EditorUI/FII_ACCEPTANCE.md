@@ -88,3 +88,9 @@ Full native build и CTest162/162 PASS, standalone Release/JCEF smoke PASS; то
 ## Последний отзыв владельца: F-II.5
 
 Адресные исправления1–7 и F-II.4:15/16/24 подтверждены. F-II.5:1–4,6–7,9–13,16 PASS владельца; появление трёх Enemy из Player подтверждено как сценарий sample. F-II.5:5/8 требуют повторения после native declared-default fix;14/15 NOT RUN с подробной инструкцией. F-II.4:21 по-прежнему NOT RUN;23 уточняется чистым запуском без breakpoint и отдельным контрактом атомарности/snapshot. Новые Folder Rename/Delete/Move ожидают ручного подтверждения. F-II.4/F-II.5/общий F-II-GATE PENDING MANUAL, freeze ещё не объявлен. [Финальный остаток](FII45_REVIEW_QA.md).
+
+## Финальный отзыв владельца и исправление scheduling
+
+Владелец подтвердил пункты финального списка 1–4 и 6–8: Folder actions, native defaults, Console/Problems, managed parameters и authoring/runtime boundary. Ручной scope F-II.5 теперь принят полностью. Пункт 5 не прошёл: пять одинаковых экземпляров получали урон последовательно по одному на тик. Предыдущая простая двухобъектная регрессия не покрывала достаточную нагрузку VM. Новый data-heavy replay на пяти Entity воспроизводит дефект со старым общим budget и проходит с отдельным bounded quantum каждой активации в C++ Play Runtime.
+
+По запросу владельца добавлены Scene clipboard hotkeys и Explorer keyboard/menu/multiselect/inline rename/DnD, создание в выбранной папке, basename для Content и компактный Scene toolbar. Они требуют короткой новой ручной проверки; общий F-II-GATE и freeze ещё ожидают её. Прошедшие ранее проверки не переоткрываются. F-III не начинался. [Актуальная инструкция](FII45_REVIEW_QA.md).

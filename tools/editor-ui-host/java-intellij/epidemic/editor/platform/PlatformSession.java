@@ -231,7 +231,7 @@ public final class PlatformSession implements Disposable {
         if(state.service()==Bridge.Service.Error||state.service()==Bridge.Service.Unavailable)referenceDrag.cancel();
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.projectFolderCommands(scripts::projectFolders,scripts::createFolder);result.folderActions(this::folderAction);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);result.runtimeCommands(this::runtimeCommand);result.runtimeBuild(scripts::buildActive);result.runtimeNavigation(this::runtimeNavigate);
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.projectFolderCommands(scripts::projectFolders,scripts::createFolder);result.folderActions(this::folderAction);result.explorerCommands(this::explorerEdit);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);result.runtimeCommands(this::runtimeCommand);result.runtimeBuild(scripts::buildActive);result.runtimeNavigation(this::runtimeNavigate);
         result.assetPreview((id,key,divisor)->{
             Bridge participant=bridge;
             var current=participant==null?null:participant.latest();
@@ -343,14 +343,16 @@ public final class PlatformSession implements Disposable {
         if(key.resolve(bridge.latest().generation(),snapshot).isEmpty())return;
         open(key.panel()+":"+Long.toUnsignedString(key.id()));
     }
-    private void newDocument(int kind){
-        if(!supports("create-document")||snapshot.playing())return;
+    private void newDocument(int kind){newDocument(kind,"");}
+    private void newDocument(int kind,String folder){
+        if(!supports("create-document")||snapshot.playing()||!pendingDocumentCloses.isEmpty())return;
         Bridge participant=bridge;long generation=participant.latest().generation(),revision=snapshot.revision();
         String label=new String[]{"Scene","Prefab","Graph"}[kind];
+        String prefix=folder.startsWith("Documents/")?folder.substring(10)+"/":"";
         JTextField nameInput=new JTextField(label);JCheckBox defaults=new JCheckBox("Registered Health / Movement components",true);
         JPanel form=new JPanel(new GridLayout(0,1,6,6));form.add(new JLabel("Document name"));form.add(nameInput);if(kind==1)form.add(defaults);
         if(JOptionPane.showConfirmDialog(WindowManager.getInstance().getFrame(project),form,"New "+label,JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;
-        String[] args=kind==1&&defaults.isSelected()?new String[]{"1",nameInput.getText(),"registered-components"}:new String[]{Integer.toString(kind),nameInput.getText()};
+        String[] args=kind==1&&defaults.isSelected()?new String[]{"1",prefix+nameInput.getText(),"registered-components"}:new String[]{Integer.toString(kind),prefix+nameInput.getText()};
         participant.callAt(generation,revision,15,args).whenComplete((reply,error)->edt(()->{
             if(error!=null){documentFailure(error);return;}
             if(bridge!=participant||bridge.latest().generation()!=reply.generation())return;
@@ -865,6 +867,113 @@ public final class PlatformSession implements Disposable {
         }
         bridge.callAt(generation,revision,operation,args).whenComplete((r,e)->edt(()->{if(e!=null)documentFailure(e);}));
     }
+    private List<UiPanels.ExplorerItem> explorerClipboard=List.of();
+    private boolean explorerCut,explorerBusy;
+    private long explorerClipboardProject;
+    private CompletableFuture<Bridge.Reply> explorerCall(int operation,String... args){var current=bridge.latest();return bridge.callAt(current.generation(),current.snapshot().revision(),operation,args);}
+    private CompletableFuture<Bridge.Reply> explorerSettle(Bridge.Reply reply,int remaining){return explorerSettle(reply,remaining,(reply.snapshot().flags()&16)==0?0:reply.snapshot().assetState().events().stream().filter(e->e.kind()==0).mapToLong(Bridge.AssetEvent::job).max().orElse(0));}
+    private CompletableFuture<Bridge.Reply> explorerSettle(Bridge.Reply reply,int remaining,long job){
+        if(bridge==null||bridge.latest()==null||bridge.latest().generation()!=reply.generation()||bridge.latest().snapshot().project()!=reply.snapshot().project())return CompletableFuture.failedFuture(new IOException("Explorer operation cancelled: project changed"));
+        if((reply.snapshot().flags()&16)==0){var failed=reply.snapshot().assetState().events().stream().filter(e->job!=0&&e.job()==job&&(e.kind()==3||e.kind()==5)).findFirst();return failed.isPresent()?CompletableFuture.failedFuture(new IOException(failed.get().diagnostic())):CompletableFuture.completedFuture(reply);}
+        if(remaining==0)return CompletableFuture.failedFuture(new IOException("Asset operation timed out"));
+        var result=new CompletableFuture<Bridge.Reply>();var timer=new javax.swing.Timer(25,e->{if(bridge==null){result.completeExceptionally(new IOException("Project closed"));return;}explorerCall(26).thenCompose(next->explorerSettle(next,remaining-1,job)).whenComplete((value,error)->{if(error!=null)result.completeExceptionally(error);else result.complete(value);});});timer.setRepeats(false);timer.start();return result;
+    }
+    private Path explorerFolder(String relative)throws IOException{
+        Path root=Path.of(snapshot.path()).getParent().toRealPath(),path=root.resolve(relative).normalize();
+        if(Path.of(relative).isAbsolute()||!path.startsWith(root))throw new IOException("Choose a project folder");
+        for(var part:Path.of(relative))if(part.toString().startsWith("."))throw new IOException("Private destination");
+        // Documents are logical names over ID-based storage. A visible namespace
+        // (including the root) need not have a physical directory yet.
+        boolean logical=relative.equals("Documents")||relative.startsWith("Documents/")&&bridge.latest().snapshot().documents().stream().anyMatch(d->("Documents/"+d.name()).startsWith(relative+"/"));
+        if(!Files.exists(path)&&logical){Path ancestor=path.getParent();while(!Files.exists(ancestor))ancestor=ancestor.getParent();if(!ancestor.toRealPath().equals(ancestor))throw new IOException("Linked ancestor");Files.createDirectories(path);}
+        if(!Files.isDirectory(path)||!path.toRealPath().equals(path))throw new IOException("Choose an existing project folder without links");return path;
+    }
+    private static String explorerLeaf(String path){return path.substring(path.lastIndexOf('/')+1);}
+    private static String explorerParent(String path){int slash=path.lastIndexOf('/');return slash<0?"":path.substring(0,slash);}
+    private String explorerUnique(String target,UiPanels.ExplorerItem item,boolean moving)throws IOException{
+        String leaf=explorerLeaf(item.path()),candidate=target.isEmpty()?leaf:target+"/"+leaf;var current=bridge.latest().snapshot();Path root=Path.of(current.path()).getParent();
+        for(int i=0;i<1000;++i){final String value=candidate;boolean exists=Files.exists(root.resolve(value))||item.kind().equals("document")&&current.documents().stream().anyMatch(d->("Documents/"+d.name()).equals(value))||item.kind().equals("folder")&&value.startsWith("Documents/")&&current.documents().stream().anyMatch(d->("Documents/"+d.name()).startsWith(value+"/"));
+            if(!exists)return candidate;if(moving)throw new IOException("Destination already exists: "+candidate);
+            int dot=leaf.lastIndexOf('.');String stem=dot>0?leaf.substring(0,dot):leaf,extension=dot>0?leaf.substring(dot):"";candidate=(target.isEmpty()?"":target+"/")+stem+" Copy"+(i==0?"":" "+(i+1))+extension;
+        }throw new IOException("Too many duplicate names");
+    }
+    private CompletableFuture<Bridge.Reply> explorerEdit(UiPanels.ExplorerEdit edit){
+        if(snapshot==null||snapshot.playing()||edit.generation()!=bridge.latest().generation()||edit.project()!=snapshot.project()||explorerBusy)return CompletableFuture.failedFuture(new IOException("Explorer is busy or project changed"));
+        try{
+            String action=edit.action(),target=edit.target();var items=edit.items();
+            // Remove descendants of selected folders, preserving deterministic visible order.
+            items=items.stream().filter(i->itemsContainNoParent(edit.items(),i)).toList();
+            if(action.equals("copy")||action.equals("cut")){explorerClipboard=List.copyOf(items);explorerCut=action.equals("cut");explorerClipboardProject=snapshot.project();return CompletableFuture.completedFuture(bridge.latest());}
+            if(action.startsWith("new:")){newDocument(Integer.parseInt(action.substring(4)),target);return CompletableFuture.completedFuture(bridge.latest());}
+            if(action.equals("new-source")){scripts.newClass(target.isEmpty()?"Scripts":target);return CompletableFuture.completedFuture(bridge.latest());}
+            if(action.equals("new-folder")){if(target.equals("Content")||target.startsWith("Content/"))newContentFolder(target.equals("Content")?"":target.substring(8));else scripts.createFolder(target);return CompletableFuture.completedFuture(bridge.latest());}
+            if(action.equals("import")){importFolder=target.equals("Content")?"":target.substring(8);importPicker();return CompletableFuture.completedFuture(bridge.latest());}
+            boolean moving=action.equals("drop")||action.equals("move")||action.equals("paste")&&explorerCut;
+            if(action.equals("paste")){if(explorerClipboardProject!=snapshot.project()||explorerClipboard.isEmpty())return CompletableFuture.completedFuture(bridge.latest());items=explorerClipboard;}
+            if(items.isEmpty())return CompletableFuture.completedFuture(bridge.latest());
+            if(action.equals("delete")&&items.stream().anyMatch(i->i.kind().equals("document")&&i.id()==snapshot.entry()))throw new IOException("Entry Scene is protected");
+            if(action.equals("delete")&&Messages.showYesNoDialog(project,"Delete "+items.size()+" selected item(s)? References and protected roots are validated by their owning service.","Delete",Messages.getWarningIcon())!=Messages.YES)return CompletableFuture.completedFuture(bridge.latest());
+            if(action.equals("rename")&&target.isEmpty()){target=Messages.showInputDialog(project,"New name", "Rename",Messages.getQuestionIcon(),explorerLeaf(items.getFirst().path()),null);if(target==null)return CompletableFuture.completedFuture(bridge.latest());}
+            if(action.equals("move")&&target.isEmpty()){target=Messages.showInputDialog(project,"Existing destination folder relative to project", "Move",Messages.getQuestionIcon(),explorerParent(items.getFirst().path()),null);if(target==null)return CompletableFuture.completedFuture(bridge.latest());}
+            if(!action.equals("rename"))target=target.replace('\\','/');
+            if(!action.equals("delete")&&!action.equals("rename")){
+                if(target.isEmpty()){String kind=items.getFirst().kind();target=kind.equals("document")?"Documents":kind.equals("asset")?"Content":kind.equals("source")?"Scripts":"";}
+                explorerFolder(target);
+            }
+            final String destination=target;final boolean move=moving;final String command=action;
+            explorerBusy=true;CompletableFuture<Bridge.Reply> future=saveProject();
+            for(var item:items){future=future.thenComposeAsync(reply->{try{
+                if(reply.generation()!=edit.generation()||reply.snapshot().project()!=edit.project())throw new IOException("Project changed");
+                return explorerOne(command,item,destination,move).thenCompose(value->explorerSettle(value,800));
+            }catch(Exception error){return CompletableFuture.failedFuture(error);}},this::edt);}
+            return future.whenComplete((reply,error)->edt(()->{explorerBusy=false;if(bridge==null||bridge.latest().generation()!=edit.generation()||bridge.latest().snapshot().project()!=edit.project())return;if(error!=null){documentFailure(error);return;}if(command.equals("paste")&&move)explorerClipboard=List.of();com.intellij.openapi.vfs.LocalFileSystem.getInstance().refresh(false);scripts.refresh();
+                for(VirtualFile file:new ArrayList<>(documents.values())){var key=file.getUserData(PanelEditorProvider.DOCUMENT);if(key!=null&&reply.snapshot().documents().stream().noneMatch(d->d.id()==key.id()))((com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project)).closeFile(file,true,true);}
+            }));
+        }catch(Exception error){explorerBusy=false;documentFailure(error);return CompletableFuture.failedFuture(error);}
+    }
+    private static boolean itemsContainNoParent(List<UiPanels.ExplorerItem> items,UiPanels.ExplorerItem child){return items.stream().noneMatch(parent->parent!=child&&parent.kind().equals("folder")&&child.path().startsWith(parent.path()+"/"));}
+    private CompletableFuture<Bridge.Reply> explorerOne(String action,UiPanels.ExplorerItem item,String target,boolean moving)throws Exception{
+        boolean deleting=action.equals("delete"),rename=action.equals("rename");
+        String source=item.path(),destination="";Path root=Path.of(snapshot.path()).getParent().toRealPath();
+        if(!deleting){
+            if(rename){if(target.isBlank()||target.startsWith(".")||target.chars().anyMatch(c->"\\/:*?\"<>|".indexOf(c)>=0))throw new IOException("Use a single public name");destination=explorerParent(source)+"/"+target;moving=true;}
+            else{String mount=item.kind().equals("document")?"Documents":item.kind().equals("asset")?"Content":item.kind().equals("source")?"Scripts":"";
+                if(!mount.isEmpty()&&!target.equals(mount)&&!target.startsWith(mount+"/"))throw new IOException("Keep items in their owning "+mount+" mount");
+                if(moving&&explorerParent(source).equals(target))return CompletableFuture.completedFuture(bridge.latest());destination=explorerUnique(target,item,moving);}
+        }
+        final String dest=destination;
+        if(item.kind().equals("document")){
+            if(deleting){if(item.id()==snapshot.entry())throw new IOException("Entry Scene is protected");return explorerCall(35,"delete",Long.toUnsignedString(item.id()));}
+            String name=dest.substring(10);if(moving)return explorerCall(5,Long.toUnsignedString(item.id()),name);
+            return explorerCall(35,"duplicate",Long.toUnsignedString(item.id()),name);
+        }
+        if(item.kind().equals("asset")){
+            String token=Long.toUnsignedString(bridge.latest().snapshot().assetRevision()),id=Long.toUnsignedString(item.id());
+            if(deleting)return explorerCall(22,token,id,"1");return explorerCall(moving?20:21,token,id,dest.substring(8));
+        }
+        if(item.kind().equals("source")){scripts.transferSource(source,dest,deleting,moving);return CompletableFuture.completedFuture(bridge.latest());}
+        if(!source.contains("/"))throw new IOException("Fixed roots are protected");
+        if(source.startsWith("Content/")||source.startsWith("Documents/")){
+            if(deleting||moving)return explorerCall(37,"edit",source,dest);
+            return explorerCopyFolder(item,dest);
+        }
+        if(deleting||moving)scripts.editFolder(deleting?"delete":"move",source,dest);else scripts.copyFolder(source,dest);
+        return CompletableFuture.completedFuture(bridge.latest());
+    }
+    private CompletableFuture<Bridge.Reply> explorerCopyFolder(UiPanels.ExplorerItem item,String destination)throws Exception{
+        String source=item.path();Path root=Path.of(snapshot.path()).getParent().toRealPath(),from=explorerFolder(source),to=root.resolve(destination);
+        if(to.startsWith(from)||Files.exists(to))throw new IOException("Invalid folder copy destination");
+        if(source.startsWith("Content/")&&!destination.startsWith("Content/")||source.startsWith("Documents/")&&!destination.startsWith("Documents/"))throw new IOException("Folder must stay in its owning mount");
+        var current=bridge.latest().snapshot();if(source.startsWith("Content/")&&current.assetState().totalAssets()>current.assets().size())throw new IOException("Folder copy exceeds current asset page; copy smaller folders or move the folder");
+        var assets=current.assets().stream().filter(a->!a.trashed()&&a.path().startsWith(source+"/")).toList();var assetPaths=assets.stream().map(Bridge.Asset::path).collect(java.util.stream.Collectors.toSet());
+        // Copy unindexed user bytes too; native asset commands own indexed identities.
+        try(var entries=Files.walk(from)){for(var iterator=entries.iterator();iterator.hasNext();){Path entry=iterator.next();if(!entry.toRealPath().equals(entry)||Files.isSymbolicLink(entry))throw new IOException("Linked folder contents");Path output=to.resolve(from.relativize(entry));if(Files.isDirectory(entry))Files.createDirectory(output);else if(!assetPaths.contains(root.relativize(entry).toString().replace('\\','/')))Files.copy(entry,output);}}
+        CompletableFuture<Bridge.Reply> future=CompletableFuture.completedFuture(bridge.latest());
+        if(source.startsWith("Documents/"))for(var doc:current.documents())if(("Documents/"+doc.name()).startsWith(source+"/")){String name=destination.substring(10)+doc.name().substring(source.length()-10);future=future.thenComposeAsync(reply->explorerCall(35,"duplicate",Long.toUnsignedString(doc.id()),name),this::edt);}
+        for(var asset:assets){String path=destination.substring(8)+asset.path().substring(source.length());future=future.thenComposeAsync(reply->explorerCall(21,Long.toUnsignedString(reply.snapshot().assetRevision()),Long.toUnsignedString(asset.id()),path).thenCompose(next->explorerSettle(next,800)),this::edt);}
+        return future;
+    }
+
     private void folderAction(String action,String source){
         if(snapshot==null||snapshot.storage()!=2||snapshot.playing())return;
         try{
@@ -1596,10 +1705,10 @@ public final class PlatformSession implements Disposable {
     private void smokeExplorerActions(Path external,long assetId){
         var explorer=tools.view("project.explorer");
         var reimport=(JButton)named(explorer,"asset.Reimport");
-        require(reimport!=null&&reimport.isEnabled(),"Explorer action did not resolve the selected asset row");
+        require(reimport==null,"Obsolete Explorer toolbar action is still visible");
         require(snapshot.selection().kind()==6&&snapshot.selection().element()==assetId,"Asset selection changed");
         long revision=snapshot.assetState().revision();
-        reimport.doClick();
+        assetAction("Reimport",assetId);
         smokeAssetPoll(()->snapshot.assetState().revision()>revision&&snapshot.selection().element()==assetId,0,()->
             queueImport(bridge,bridge.latest().generation(),external.toString(),"f1-import.png").whenComplete((reply,error)->edt(()->{
                 if(error!=null){failure(error);return;}
@@ -1613,12 +1722,46 @@ public final class PlatformSession implements Disposable {
                     "Standalone Main Menu merge setting was lost");
                 saveProject().whenComplete((saved,saveError)->edt(()->{
                     if(saveError!=null){failure(saveError);return;}
-                    record("PASS F1 Explorer button retained asset ID; duplicate destination opened Problems; merged toolbar mode retained");
-                    smokePickerCancel(problemView);
+                    record("PASS F1 Explorer action retained asset ID; duplicate destination opened Problems; merged toolbar mode retained");
+                    smokeExplorerWorkflow().whenComplete((checked,checkError)->edt(()->{if(checkError!=null){failure(checkError);return;}record("PASS Explorer Documents/Content folder copy, stable source IDs, Unicode rename and native drop move");smokePickerCancel(problemView);}));
                 }));
             })));
     }
     private boolean logContains(JTable table,String value){return java.util.stream.IntStream.range(0,table.getRowCount()).anyMatch(row->String.valueOf(table.getValueAt(row,7)).contains(value));}
+    private CompletableFuture<Bridge.Reply> smokeExplorerWorkflow(){
+        try{
+            Path root=Path.of(snapshot.path()).getParent();
+            long gen=bridge.latest().generation(),projectId=snapshot.project();
+            var original=new UiPanels.ExplorerItem("folder",0,"Documents/Explorer Source");
+            return explorerCall(15,"2","Explorer Root").thenComposeAsync(reply->{
+                explorerEdit(new UiPanels.ExplorerEdit(gen,projectId,"copy",List.of(new UiPanels.ExplorerItem("document",reply.snapshot().selection().document(),"Documents/Explorer Root")),""));
+                return explorerEdit(new UiPanels.ExplorerEdit(gen,projectId,"paste",List.of(),"Documents"));
+            },this::edt).thenComposeAsync(reply->{try{
+                require(reply.snapshot().documents().stream().anyMatch(d->d.name().equals("Explorer Root Copy")),"Paste into logical Documents root failed");
+                Files.createDirectories(root.resolve("Documents/Explorer Target"));Files.createDirectories(root.resolve("Documents/Move Target"));
+                require(!Files.exists(root.resolve("Documents/Explorer Source")),"Logical folder fixture is unexpectedly physical");
+                return explorerCall(15,"2","Explorer Source/Sub/Copy Me");
+            }catch(Exception error){return CompletableFuture.failedFuture(error);}},this::edt).thenComposeAsync(reply->{
+                explorerEdit(new UiPanels.ExplorerEdit(gen,projectId,"copy",List.of(original),""));return explorerEdit(new UiPanels.ExplorerEdit(gen,projectId,"paste",List.of(),"Documents/Explorer Target"));
+            },this::edt).thenComposeAsync(reply->{
+                require(Files.isDirectory(root.resolve("Documents/Explorer Source"))&&reply.snapshot().documents().stream().anyMatch(d->d.name().equals("Explorer Target/Explorer Source/Sub/Copy Me")),"Explorer logical folder copy lost documents");
+                return explorerEdit(new UiPanels.ExplorerEdit(gen,projectId,"rename",List.of(new UiPanels.ExplorerItem("folder",0,"Documents/Explorer Target/Explorer Source")),"Переименовано"));
+            },this::edt).thenComposeAsync(reply->explorerEdit(new UiPanels.ExplorerEdit(gen,projectId,"drop",List.of(new UiPanels.ExplorerItem("folder",0,"Documents/Explorer Target/Переименовано")),"Documents/Move Target")),this::edt).thenComposeAsync(reply->{
+                require(reply.snapshot().documents().stream().anyMatch(d->d.name().equals("Move Target/Переименовано/Sub/Copy Me")),"Explorer drop did not move native document paths");
+                return explorerCall(37,"Explorer Inputs");
+            },this::edt).thenComposeAsync(reply->explorerCall(37,"Explorer Outputs"),this::edt).thenComposeAsync(reply->{
+                var source=reply.snapshot().assets().stream().filter(a->a.path().equals("Content/f1-import.png")).findFirst().orElseThrow();
+                return explorerCall(21,Long.toUnsignedString(reply.snapshot().assetRevision()),Long.toUnsignedString(source.id()),"Explorer Inputs/copied.png").thenCompose(next->explorerSettle(next,800));
+            },this::edt).thenComposeAsync(reply->{
+                explorerEdit(new UiPanels.ExplorerEdit(gen,projectId,"copy",List.of(new UiPanels.ExplorerItem("folder",0,"Content/Explorer Inputs")),""));
+                return explorerEdit(new UiPanels.ExplorerEdit(gen,projectId,"paste",List.of(),"Content/Explorer Outputs"));
+            },this::edt).thenApply(reply->{
+                var a=reply.snapshot().assets().stream().filter(asset->asset.path().equals("Content/Explorer Inputs/copied.png")).findFirst().orElseThrow();
+                var b=reply.snapshot().assets().stream().filter(asset->asset.path().equals("Content/Explorer Outputs/Explorer Inputs/copied.png")).findFirst().orElseThrow();
+                require(a.id()!=b.id(),"Folder duplicate aliased native source identity");return reply;
+            });
+        }catch(Exception error){return CompletableFuture.failedFuture(error);}
+    }
     private void smokePickerCancel(JTable problems){
         var console=(JTable)named(tools.view("console"),"console.output");
         require(logContains(console,"editor.asset_imported")&&!logContains(problems,"editor.asset_imported")&&
