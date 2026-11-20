@@ -237,6 +237,11 @@ foundation::Result<void> EditorWorkspace::MoveAsset(runtime::AssetId asset,
                           : foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
 }
 
+foundation::Result<void> EditorWorkspace::EditFolder(std::string_view source,std::string_view destination) {
+    if((session_&&session_->IsPlaying())||AssetJobsBusy())return Finish(foundation::Result<void>::Failure(Error("editor.ui.folder_busy")));
+    return Finish(folder_?folder_->EditFolder(source,destination):foundation::Result<void>::Failure(Error("editor.ui.no_folder")),true);
+}
+
 foundation::Result<void> EditorWorkspace::UndoAssetMove() {
     return Finish(folder_ ? folder_->UndoAssetMove()
                           : foundation::Result<void>::Failure(Error("editor.ui.no_folder")));

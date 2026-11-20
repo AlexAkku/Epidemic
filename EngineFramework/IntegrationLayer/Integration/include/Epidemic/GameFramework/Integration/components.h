@@ -25,6 +25,7 @@ struct PropertyInfo {
 
     std::string name;
     PropertyKind kind = PropertyKind::Integer;
+    std::optional<PropertyValue> initial{}; // Explicit metadata; Inspector never invokes factories.
 };
 
 struct ComponentTypeInfo {
@@ -100,7 +101,8 @@ class ComponentRegistry final {
     template <typename T, typename V>
     foundation::Result<PropertyId> RegisterProperty(TypeId type, std::string_view name,
                                                     V T::*member,
-                                                    bool (*validate)(const V &) = nullptr) {
+                                                    bool (*validate)(const V &) = nullptr,
+                                                    std::optional<V> initial = std::nullopt) {
         using Result = foundation::Result<PropertyId>;
         static_assert(std::is_same_v<V, std::int64_t> || std::is_same_v<V, double> ||
                       std::is_same_v<V, bool> || std::is_same_v<V, std::string>);
@@ -136,8 +138,10 @@ class ComponentRegistry final {
             return foundation::Result<void>::Success();
         };
 
+        if(initial){auto valid=property.validate(PropertyValue{*initial});if(!valid)return Result::Failure(valid.GetError());}
         PropertyInfo info{id, std::string(name),
-                          static_cast<PropertyKind>(PropertyValue{V{}}.index())};
+                          static_cast<PropertyKind>(PropertyValue{V{}}.index()),
+                          initial?std::optional<PropertyValue>{PropertyValue{*initial}}:std::nullopt};
 
         decltype(descriptor.properties) staged;
         staged.emplace(id.Raw(), std::move(property));

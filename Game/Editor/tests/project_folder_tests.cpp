@@ -21,6 +21,34 @@ fs::path Base() {
     return fs::path{EPIDEMIC_EDITOR_TEST_DIRECTORY} / "p04-folder";
 }
 
+void FolderCommands(){
+    ex::Schema schema;auto root=Base()/"FolderOps";
+    auto folder=ex::Take(ed::ProjectFolder::Create(root,"Folders",ex::Definition(schema),schema.View()));
+    fs::create_directories(root/"Content/A/Sub");{std::ofstream file(root/"Content/A/Sub/data.bin");file<<"bytes";}
+    auto asset=ex::Take(folder->IndexSource("A/Sub/data.bin",{ex::Id("editor.source.texture")}));ex::Take(folder->Save());
+    Check(!folder->EditFolder("Content/A","Content/"+std::string(4090,'x'))&&fs::exists(root/"Content/A/Sub/data.bin"),"Oversized resulting asset path mutated the folder");
+    ex::Take(folder->MoveSource(asset,"A/Sub/new.bin"));
+    ex::Take(folder->EditFolder("Content/A","Content/B"));
+    Check(folder->Sources().front().id==asset&&folder->Sources().front().relative_path=="Content/B/Sub/new.bin","Folder move lost source identity");
+    folder.reset();folder=ex::Take(ed::ProjectFolder::Open(root,schema.View()));
+    Check(fs::exists(root/"Content/A/Sub/data.bin")&&folder->Sources().front().relative_path=="Content/A/Sub/data.bin","Interleaved file/directory journal did not recover in reverse order");
+    ex::Take(folder->EditFolder("Content/A","Content/B"));ex::Take(folder->Save());
+    ex::Take(folder->EditFolder("Content/B",""));Check(folder->Sources().front().IsTrashed()&&!fs::exists(root/"Content/B"),"Folder delete not staged in trash");
+    ex::Take(folder->Undo());Check(!folder->Sources().front().IsTrashed()&&fs::exists(root/"Content/B/Sub/data.bin")&&!folder->IsDirty(),"Folder Undo after Save lost source/baseline");
+    ex::Take(folder->Redo());ex::Take(folder->Undo());
+    const auto prefab=rt::AssetId::FromString("example.prefab");fs::create_directories(root/"Documents/A/Sub");
+    ex::Take(folder->Execute({folder->Revision(),{ed::RenameDocument{prefab,"A/Sub/Enemy"}}}));ex::Take(folder->Save());
+    ex::Take(folder->EditFolder("Documents/A","Documents/B"));
+    Check(folder->Snapshot()->Find(prefab)->name=="B/Sub/Enemy","Folder rename lost logical document path");
+    auto revision=folder->Revision();Check(!folder->EditFolder("Documents/B","")&&folder->Revision()==revision&&fs::exists(root/"Documents/B"),"Rejected referenced-document delete mutated folder");
+    Check(!folder->EditFolder("Documents/B","Documents/B/Sub/C"),"Folder cycle accepted");
+    Check(!folder->EditFolder("Content/B","Documents/B"),"Folder crossed typed mount");
+    ex::Take(folder->Undo());Check(folder->Snapshot()->Find(prefab)->name=="A/Sub/Enemy"&&fs::exists(root/"Documents/A/Sub"),"Folder/doc Undo was not one step");
+    ex::Take(folder->Redo());ex::Take(folder->Save());folder.reset();folder=ex::Take(ed::ProjectFolder::Open(root,schema.View()));
+    Check(folder->Snapshot()->Find(prefab)->name=="B/Sub/Enemy"&&fs::exists(root/"Documents/B/Sub"),"Folder Save/Open lost committed state");
+    std::cout<<"PASS folder identities, whole Undo/Redo, staged delete, rejected references/cycles/mounts, interleaved journal and new-open persistence\n";
+}
+
 void Create() {
     std::error_code ec;
     fs::remove_all(Base(), ec);
@@ -71,6 +99,7 @@ void Create() {
           "Legacy import is copy-only");
     Check(!imported->Execute({imported->Revision(), {ed::AddGraphNode{graph, retired}}}),
           "Legacy retired ID must survive folder migration");
+    FolderCommands();
     std::cout << "P04 folder create/commit/index/clone/legacy PASS\n";
 }
 

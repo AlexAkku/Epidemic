@@ -75,6 +75,7 @@ class EditorWorkspace final {
     [[nodiscard]] foundation::Result<void> AssignPrefabSprite(const PrefabSpriteBinding &binding);
     [[nodiscard]] foundation::Result<void> MoveAsset(runtime::AssetId asset,
                                                      std::string_view relative);
+    [[nodiscard]] foundation::Result<void> EditFolder(std::string_view source,std::string_view destination);
     [[nodiscard]] foundation::Result<void> UndoAssetMove();
     [[nodiscard]] foundation::Result<void> RedoAssetMove();
 

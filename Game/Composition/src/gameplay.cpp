@@ -118,7 +118,7 @@ foundation::Result<void> Register(comp::ComponentRegistry &r) {
     return R::Failure(type.GetError())
 #define FIELD(T, F, V)                                                                             \
     {                                                                                              \
-        auto field = r.RegisterProperty<T, decltype(T::F)>(type.Value(), #F, &T::F, V);            \
+        auto field = r.RegisterProperty<T, decltype(T::F)>(type.Value(), #F, &T::F, V, T{}.F);            \
         if (!field)                                                                                \
             return R::Failure(field.GetError());                                                   \
     }

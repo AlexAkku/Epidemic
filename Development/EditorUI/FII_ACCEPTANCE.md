@@ -84,3 +84,7 @@ Full native build и CTest162/162 PASS, standalone Release/JCEF smoke PASS; то
 ## Повторная проверка владельца20 ноября2026
 
 Адресные2–4,6–7 и F-II.4:13–15,17–20,22–23,25 приняты владельцем. Адресный1: пустая папка ошибочно имела file icon;5: требуется единая Auto/Lock палетка. F-II.4:16 — исправляется stale breakpoint/Wait navigation и независимое закрытие Problems.21 NOT RUN (отложен владельцем),24 ожидает уточнённую проверку Profiler. F-II.5 manual NOT STARTED. F-II.4/F-II.5-GATE остаются PENDING MANUAL; общая стадия не объявляется PASS. Актуальные пояснения15/23/24 и адресный повтор: [FII45_REVIEW_QA](FII45_REVIEW_QA.md).
+
+## Последний отзыв владельца: F-II.5
+
+Адресные исправления1–7 и F-II.4:15/16/24 подтверждены. F-II.5:1–4,6–7,9–13,16 PASS владельца; появление трёх Enemy из Player подтверждено как сценарий sample. F-II.5:5/8 требуют повторения после native declared-default fix;14/15 NOT RUN с подробной инструкцией. F-II.4:21 по-прежнему NOT RUN;23 уточняется чистым запуском без breakpoint и отдельным контрактом атомарности/snapshot. Новые Folder Rename/Delete/Move ожидают ручного подтверждения. F-II.4/F-II.5/общий F-II-GATE PENDING MANUAL, freeze ещё не объявлен. [Финальный остаток](FII45_REVIEW_QA.md).

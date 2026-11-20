@@ -231,7 +231,7 @@ public final class PlatformSession implements Disposable {
         if(state.service()==Bridge.Service.Error||state.service()==Bridge.Service.Unavailable)referenceDrag.cancel();
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.projectFolderCommands(scripts::projectFolders,scripts::createFolder);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);result.runtimeCommands(this::runtimeCommand);result.runtimeBuild(scripts::buildActive);result.runtimeNavigation(this::runtimeNavigate);
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.projectFolderCommands(scripts::projectFolders,scripts::createFolder);result.folderActions(this::folderAction);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);result.runtimeCommands(this::runtimeCommand);result.runtimeBuild(scripts::buildActive);result.runtimeNavigation(this::runtimeNavigate);
         result.assetPreview((id,key,divisor)->{
             Bridge participant=bridge;
             var current=participant==null?null:participant.latest();
@@ -864,6 +864,28 @@ public final class PlatformSession implements Disposable {
             default->{return;}
         }
         bridge.callAt(generation,revision,operation,args).whenComplete((r,e)->edt(()->{if(e!=null)documentFailure(e);}));
+    }
+    private void folderAction(String action,String source){
+        if(snapshot==null||snapshot.storage()!=2||snapshot.playing())return;
+        try{
+            Path path=Path.of(source),parent=path.getParent();String leaf=path.getFileName().toString(),destination="";
+            if(action.equals("delete")){if(Messages.showYesNoDialog(project,"Delete folder "+source+" and its contents? Bytes are retained in private trash. References may become Missing; deleting the entry Scene or referenced Documents is rejected.","Delete Folder",Messages.getWarningIcon())!=Messages.YES)return;}
+            else if(action.equals("rename")){
+                String name=Messages.showInputDialog(project,"New folder name", "Rename Folder",Messages.getQuestionIcon(),leaf,null);if(name==null)return;
+                if(name.isBlank()||name.startsWith(".")||name.chars().anyMatch(c->"\\/:*?\"<>|".indexOf(c)>=0))throw new IOException("Use a single public folder name");destination=(parent==null?Path.of(name):parent.resolve(name)).toString().replace('\\','/');
+            }else{
+                String mount=source.startsWith("Content/")?"Content":source.startsWith("Documents/")?"Documents":source.startsWith("Scripts/")?"Scripts":"";
+                String target=Messages.showInputDialog(project,"Existing destination parent relative to project ("+mount+"; empty = project root)","Move Folder",Messages.getQuestionIcon(),parent==null?"":parent.toString(),null);if(target==null)return;
+                if(Path.of(target).isAbsolute())throw new IOException("Use a project-relative parent");destination=Path.of(target).resolve(leaf).toString().replace('\\','/');
+            }
+            String target=destination;
+            if(!source.startsWith("Content/")&&!source.startsWith("Documents/")){scripts.editFolder(action,source,target);return;}
+            saveProject().thenCompose(saved->bridge.callAt(saved.generation(),saved.snapshot().revision(),37,"edit",source,target)).whenComplete((reply,error)->edt(()->{
+                if(error!=null){documentFailure(error);return;}
+                com.intellij.openapi.vfs.LocalFileSystem.getInstance().refresh(false);scripts.refresh();
+                for(VirtualFile file:new ArrayList<>(documents.values())){var key=file.getUserData(PanelEditorProvider.DOCUMENT);if(key!=null&&reply.snapshot().documents().stream().noneMatch(d->d.id()==key.id()))((com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project)).closeFile(file,true,true);}
+            }));
+        }catch(Exception error){documentFailure(error);}
     }
     private void newContentFolder(String parent){
         if(!supports("content-folders")||snapshot.storage()!=2||snapshot.playing())return;

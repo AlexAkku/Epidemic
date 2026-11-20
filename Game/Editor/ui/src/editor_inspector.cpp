@@ -78,7 +78,8 @@ void Properties(std::vector<InspectorEntry> &rows, const comp::ComponentRegistry
                      component.part};
 
         row.editable = editable;
-        row.source = "factory default unavailable";
+        row.value = property.initial;
+        row.source = row.value ? "native schema default" : "factory default unavailable";
         if(const auto *description=registry.Description(component.type)) {
             const auto field=std::find_if(description->fields.begin(),description->fields.end(),[&](const auto &f){return comp::PropertyId::FromString(f.name)==property.id;});
             if(field!=description->fields.end()){row.value=field->initial;row.source="schema default";}

@@ -7,7 +7,7 @@
 Закройте прежний экземпляр редактора. Проверенная side-by-side сборка находится здесь (обычный Windows PowerShell, `pwsh` не нужен):
 
 ```powershell
-& 'D:\MyProjects\Epidemic engine v2.0\Temp\U\verification-images\3bd1025cae5c4ec68c90220446c6dd3b\EpidemicEditor\EpidemicEditor.exe'
+& 'D:\MyProjects\Epidemic engine v2.0\Temp\U\verification-images\8b28b81e5f534452b8274e111f01d4a1\EpidemicEditor\EpidemicEditor.exe'
 ```
 
 Старый `Temp/U/distribution` этим прогоном не обновлялся. Подробные автоматические результаты и ограничения: [FII5_REPORT](FII5_REPORT.md).

@@ -1,37 +1,41 @@
-# Исправления повторной приёмки F-II.4 / F-II.5
+# Финальные исправления приёмки F-II.4 / F-II.5
 
-20 ноября2026. Baseline:c02355b. Без Computer Use и push. F-II.3-GATE остаётся PASS; F-II.4/F-II.5-GATE — PENDING MANUAL.
+20 ноября 2026. Отправная точка: `50983ed`. Без Computer Use и push. F-II.3-GATE PASS; F-II.4/F-II.5 и общий F-II-GATE **PENDING MANUAL**.
 
-## Изменения
+## Что завершено
 
-- Пустые папки Explorer используют folder icon даже у leaf-узла.
-- В Data один Input/Output, в Math один элемент каждой числовой операции. Старые typed TypeId сохранены для открытия прежних графов; отдельные i64/f64 пункты палетки и Add menu скрыты.
-- Замки на узле и в Graph Inspector выбирают Auto/Lock i64/Lock f64. Native C++ согласует типы связанных числовых узлов, сохраняет авторские признаки литералов, отвергает несовместимые фиксированные типы и потерю точности. Node/port IDs сохраняются. Правка и изменение типов проходят одним Execute/Undo.
-- graph_authoring v2 сохраняет режим и признаки литералов; reader поддерживает v1, неизвестные версии отвергаются. Core/VM арифметика переиспользована; Java/JCEF отображают native DTO. Нового игрового цикла в Java нет.
-- Debug gate теперь останавливает на фактической операции, а не повторно на служебных фазах Native Call. Заморозка остальных активаций сохраняется, включая административные фазы. Старая остановка очищается при Step; Go to Node выбирает текущую runtime activation, даже если в авторском Graph выделен первый Native Call.
-- Problems закрывается своей вкладкой, сохраняя Debugger/Output, и открывается снова с корректным Content lifetime.
-- Smoke-тест замка дожидается native-ответа перед отчётом; JavaScript assertions сообщают причину ошибки. Rate/nonce/revision/security guards сохранены.
+- ПКМ Rename/Move/Delete папок Content и Documents: одна native история Undo/Redo, стабильные AssetId/DocumentId и ссылки, Save/Open. Непустое удаление сохраняет bytes в приватной корзине; entry Scene и внешние сильные ссылки защищены. Межмонтные перемещения, циклы, конфликтующие пути, ссылки/reparse и слишком длинные результирующие пути отвергаются.
+- Общий source-moves journal v2 сохраняет порядок файловых и каталоговых операций; чтение старого v1 поддерживается. Неподтверждённые перемещения восстанавливаются в обратном порядке после нового Open.
+- Scripts и обычные папки проекта используют существующие SDK VFS/WriteCommandAction; открытый C# source переоткрывается по новому пути. Удаление сохраняет файлы в `.epidemic/FolderTrash`, исключает их из активных sources. Фиксированные и служебные корни защищены. Единый native Undo для этих файловых операций не заявлен.
+- Нативная регистрация явно публикует реальные scalar defaults C++ компонентов. Inspector читает метаданные без создания component/factory. Существующие Arena Prefab получают доступные InputBindings и Collider без пересоздания; авторские значения, параметры и overrides сохраняют приоритет. Типы без объявленных defaults остаются unavailable.
+- Восемь native повторов двух Entity: explicit events и autostart, одинаковые tick inputs при разном wall pacing. Проверяется Health обоих объектов на каждом тике, 100→93→86. В этом профиле повреждения происходят на одинаковых тиках без breakpoints. Универсальный replay managed/external inputs этим не заявлен.
 
-## Реально пройденные проверки
+## Фактические проверки
 
-- Native Debug build и **CTest4/4 PASS**: EditorCore (включая v1→v2 migration/future rejection), Gameplay, Graph VM, Graph Control (одна логическая breakpoint boundary и полная session freeze). ArchitectureFreezeSelfTest PASS. Батч344.08s.
-- **Финальный Release/standalone/JCEF/packaged батч PASS**,299.06s после последних unsigned-mask правок. Штатная offline упаковка, pinned runtime/лицензии, sandbox/CSP/ограничения Bridge, окна/Graph FileEditor lifecycle и shutdown прошли. Новые UI-сценарии: клик Lock i64→Auto, inline1.2500→native1.25→Save→i64, независимое закрытие/повторное открытие Problems. surfaces=0; принадлежащие launcher/CEF-процессы завершились.
-- Упакованные GraphTests/RuntimeTests/GraphSceneTests PASS: Auto promotion/demotion/disconnect, строгие locks, fractional literals, rejection без изменения revision, отсутствие потери точности, atomic Undo/Redo, Save/Open другим процессом, stale guards, Damage/Wait/Damage100→93→86, Stop с authoring100. Go to Node проверен через настоящий RuntimeDebugger с намеренно другим авторским выделением.
-- IPC v4 adversarial, catalog/source coverage и managed architecture PASS на конечном backend. Полный CTest162 предыдущей итерации не выдаётся за новый полный прогон: текущий CTest адресный4/4.
-- Targeted clang-tidy:8 реальных TU с clang-analyzer/bugprone checks. Общий результат **FAIL**:15 унаследованных диагностик (14 выражений подтверждены Git blame,1 в заголовке MSVC). Два новых signed-bitwise замечания исправлены; повтор backend и linear VM завершён, на добавленных/изменённых строках диагностик0. Не добавлялись suppressions и не отключались проверки. Остаток остаётся существующим static backlog.
+- Native Debug build, полный **CTest 162/162 PASS**, ArchitectureFreezeSelfTest PASS (643.05 s).
+- После дополнительного preflight результирующих asset paths: Folder Create/Reopen/Recovery **3/3 PASS**. После расширения replay: GameplayTests PASS, восемь explicit/autostart запусков.
+- Финальный Release backend/JNI, штатная offline упаковка с pinned JBR/JCEF и standalone smoke PASS. Platform Graph/FileEditor/окна, sandbox/Bridge/CSP, reconnect, C# Editor и новые папки Scripts прошли; shutdown: `surfaces=0`, fatal Platform diagnostics нет.
+- Упакованные GraphTests, RuntimeTests, GraphSceneTests, ScriptTests PASS. IPC v4 adversarial, catalog/source coverage и managed architecture PASS. Финальный повтор всего этого набора на готовом EXE: **PASS, 102.00 s**. Время и исполнение остаются в C++ Runtime, Java управляет сессией и отображает DTO.
+- Адресный clang-tidy по 8 реальным TU: **FAIL**, 356.24 s, 20 унаследованных диагностик (19 в исходниках, 1 в MSVC xfilesystem_abi). Git blame подтверждает прежние выражения; macro-parentheses на изменённой строке относится к прежнему аргументу V, существовавшему в 17498a78, а не к добавленному default. Новых диагностик от текущей реализации не найдено. Остаток: signed bitwise, exception specifications/escape, легко переставляемые параметры и branch clone; это существующий static backlog. Checks и warnings-as-errors сохранены, suppressions не добавлялись.
 
-Первые неуспешные запуски не названы PASS: исправлены ошибки компиляции адаптера, повторный breakpoint и тестовый race с pending Bridge; конечные проверки выполнены после исправлений.
+Первый Release-запуск с ошибкой адаптера Select(bool) был FAIL; исправлен и повторён. Неуспешные предварительные запуски не названы PASS.
 
-## Статус ручной приёмки
+## Игровая семантика
 
-Владелец принял адресные2–4,6–7 и F-II.4:13–15,17–20,22–23,25. Для повторения остаются пустые папки, новый Auto/Lock и16 (Wait/navigation/Problems).21 отложен,24 требует уточнённой проверки Profiler. F-II.5 manual ещё не начат. F-III не начинался.
+Детерминизм означает одинаковую последовательность состояния при одинаковом начальном состоянии, seed, tick inputs и scheduler budgets. Это не обещание атомарности независимых coroutine. Но неповторимый сдвиг в чистом профиле без debugger недопустим: требуется отдельный ручной повтор на проекте владельца. Конкретная причина наблюдавшегося сдвига не подтверждена.
 
-Реальный FPS уже есть в Profiler — HWND … FPS; новый HUD не вводился. Трёхтиковый сдвиг двух placement сам по себе не ошибка: сравнивается собственная длительность Wait каждой activation. WASD общий, скорость берётся из каждого объекта.
+Текущий ApplyDamage — single-target. Будущая AoE обязана зафиксировать target set, подготовить и применить все записи одной native транзакцией до callbacks/публикации игрового checkpoint. Debug RuntimeSnapshot может показывать частично исполненный tick на breakpoint; это наблюдение отладчика, а не savegame/checkpoint. Editor Save сохраняет authoring.
 
-Инструкции15/16/23/24 и продолжение: [FII45_REVIEW_QA](FII45_REVIEW_QA.md). Полный совместный прогон, включая Arena/F-II.5: [FII45_MANUAL_QA](FII45_MANUAL_QA.md).
+Три Enemy в стартовой позиции Player ожидаемы в минимальном Arena sample: Graph Spawn копирует transform вызывающего Player. Отдельный WaveSpawner использует свой transform. Пространственный spawn не добавлялся.
 
-Конечный EXE:
+## Осталось вручную
+
+Владелец принял прежние исправления 1–7, F-II.4:15/16/24 и F-II.5:1–4,6–7,9–13,16. Остались новые папки, повтор InputBindings/Collider (5/8), чистый replay двух Entity, F-II.4:21 Console/Problems и F-II.5:14/15. Подробные действия и ожидаемые результаты: [финальный раздел инструкции](FII45_REVIEW_QA.md#финальный-ручной-прогон-перед-freeze-f-ii).
+
+После подтверждения этих пунктов можно закрывать F-II.4/F-II.5 и замораживать F-II. Сейчас PASS не выставлен. F-III не начинался.
+
+Актуальный EXE:
 
 ```powershell
-& 'D:\MyProjects\Epidemic engine v2.0\Temp\U\verification-images\31f2a6d5325f4025a84e52185a1c0baa\EpidemicEditor\EpidemicEditor.exe'
+& 'D:\MyProjects\Epidemic engine v2.0\Temp\U\verification-images\8b28b81e5f534452b8274e111f01d4a1\EpidemicEditor\EpidemicEditor.exe'
 ```

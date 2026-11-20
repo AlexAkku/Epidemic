@@ -1,5 +1,5 @@
 #include "Epidemic/Game/Editor/editor_inspector.h"
-#include "../../example/demo_game.h"
+#include "../../example/arena_sample.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -41,7 +41,26 @@ comp::PropertyValue Value(const ed::InspectorEntry &entry) {
 
 } // namespace
 
+void NativeGameplayDefaults() {
+    ex::Schema schema;
+    auto project=ex::Take(ed::EditorProject::Create("Temp/editor-tests/native-defaults.epidemic",ex::Arena(schema),schema.View()));
+    auto prefab=runtime::AssetId::FromString("arena.turret");
+    const auto &definition=std::get<comp::PrefabDefinition>(project->Snapshot()->Find(prefab)->data);
+    ed::UiSelection selection{prefab,ed::UiElement::PrefabNode,definition.root.id.Raw()};
+    const auto field=[&](std::string_view type,std::string_view name){auto rows=ed::InspectComponents(*project->Snapshot(),selection,schema.components);auto found=std::find_if(rows.begin(),rows.end(),[&](const auto &r){return r.owner.component==gameplay::TypeId::FromString(type)&&r.property==ex::Id(name);});Check(found!=rows.end());return *found;};
+    auto right=field("gameplay.inputbindings","right");
+    Check(right.value==comp::PropertyValue{std::int64_t{68}}&&right.editable&&right.source=="native schema default");
+    Check(field("gameplay.collider2d","half_x").value==comp::PropertyValue{.4});
+    Check(field("gameplay.collider2d","trigger").value==comp::PropertyValue{false});
+    auto command=ex::Take(ed::InspectorCommand(right,"76"));
+    ex::Take(project->Execute({project->Revision(),{command}}));
+    Check(field("gameplay.inputbindings","right").value==comp::PropertyValue{std::int64_t{76}});
+    ex::Take(project->Undo());Check(field("gameplay.inputbindings","right").value==comp::PropertyValue{std::int64_t{68}});
+    ex::Take(project->Redo());Check(field("gameplay.inputbindings","right").value==comp::PropertyValue{std::int64_t{76}});
+}
+
 void InspectorCases() {
+    NativeGameplayDefaults();
     gameplay::entities::EntityService entities;
     comp::ComponentRegistry registry;
     int factories = 0;

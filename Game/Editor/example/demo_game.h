@@ -99,18 +99,21 @@ struct Schema {
         type.canonical_name = "editor.example.enemy";
         enemy = Take(entities.RegisterArchetype(type));
         entities.Freeze();
+        const auto field=[&]<class T,class V>(gameplay::TypeId type,std::string_view name,V T::*member,bool(*validate)(const V &)=nullptr){
+            return components.RegisterProperty<T,V>(type,name,member,validate,T{}.*member);
+        };
         health = Take(components.Register<Health>("editor.example.health"));
-        points = Take(components.RegisterProperty(health, "points", &Health::points, &ValidHealth));
+        points = Take(field(health, "points", &Health::points, &ValidHealth));
         movement = Take(components.Register<Movement>("editor.example.movement"));
-        speed = Take(components.RegisterProperty(movement, "speed", &Movement::speed, &ValidWeight));
-        enabled = Take(components.RegisterProperty(movement, "enabled", &Movement::enabled));
-        label = Take(components.RegisterProperty(movement, "label", &Movement::label));
+        speed = Take(field(movement, "speed", &Movement::speed, &ValidWeight));
+        enabled = Take(field(movement, "enabled", &Movement::enabled));
+        label = Take(field(movement, "label", &Movement::label));
         tuning = Take(components.Register<Tuning>("editor.example.tuning"));
-        count = Take(components.RegisterProperty(tuning, "count", &Tuning::count, &ValidHealth));
-        weight = Take(components.RegisterProperty(tuning, "weight", &Tuning::weight, &ValidWeight));
-        active = Take(components.RegisterProperty(tuning, "active", &Tuning::active));
-        title = Take(components.RegisterProperty(tuning, "title", &Tuning::title));
-        Take(components.RegisterProperty(health, "maximum", &Health::maximum, &ValidHealth));
+        count = Take(field(tuning, "count", &Tuning::count, &ValidHealth));
+        weight = Take(field(tuning, "weight", &Tuning::weight, &ValidWeight));
+        active = Take(field(tuning, "active", &Tuning::active));
+        title = Take(field(tuning, "title", &Tuning::title));
+        Take(field(health, "maximum", &Health::maximum, &ValidHealth));
         Take(gc::arena::Register(components));
         components.Freeze();
     }

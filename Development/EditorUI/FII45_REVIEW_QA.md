@@ -1,11 +1,11 @@
 # Проверка исправлений регрессии F-II.4 / F-II.5
 
-Закройте старый экземпляр и запустите EXE из итогового сообщения. Используйте копию проекта; разверните окно. Оба gate ещё ожидают ручной приёмки. Сначала адресные пункты ниже, затем продолжите основной прогон.
+Закройте старый экземпляр и запустите EXE ниже. Используйте копию проекта; разверните окно. Для текущей приёмки перейдите к разделу «Финальный ручной прогон перед freeze F-II»: более ранние пункты ниже сохранены как справочник. Уже принятый полный прогон повторять не требуется. Оба gate ожидают подтверждения оставшихся проверок.
 
 Новая сборка, прошедшая standalone smoke и packaged-регрессии:
 
 ```powershell
-& 'D:\MyProjects\Epidemic engine v2.0\Temp\U\verification-images\31f2a6d5325f4025a84e52185a1c0baa\EpidemicEditor\EpidemicEditor.exe'
+& 'D:\MyProjects\Epidemic engine v2.0\Temp\U\verification-images\8b28b81e5f534452b8274e111f01d4a1\EpidemicEditor\EpidemicEditor.exe'
 ```
 
 1. **Папки и Documents Move.** В Explorer нажмите ПКМ по Documents → New Folder, создайте `Сцены`. Отдельно создайте папку через ПКМ по Scripts и по самому корню проекта. Создайте Scene/Graph, выберите документ → Document Actions → Move Document; укажите `Сцены` без префикса Documents. Документ появляется внутри папки, открытая вкладка продолжает работать. Undo/Redo перемещения, Save All, перезапуск: структура сохранена. Для возврата в Documents укажите пустую строку. Documents — организация документов по пути имени; физическое версионированное хранилище и стабильные ID не перемещаются.
@@ -51,3 +51,32 @@
 6. Посмотрите Entities/Activations, память backend/UI, preview residency и очереди импорта/build. Сопоставьте счётчики с текущей сценой и выполняемой работой. После Stop live entities/activations очищаются; освобождение working set ОС не обязано быть мгновенным. GPU duration, allocations и JCEF renderer RAM без provider остаются Unavailable, а не выдуманными нулями. Dropped catch-up ticks может увеличиваться при перегрузке; это диагностический счётчик, его ноль не гарантируется на любой машине.
 
 Реальный FPS уже реализован в Profiler; новый FPS HUD поверх Game View на этом этапе не вводится. Продолжение после этих пунктов: основной21 и весь F-II.5/Arena из FII45_MANUAL_QA.md.
+
+## Финальный оставшийся ручной прогон перед freeze F-II
+
+Предыдущие адресные1–7, F-II.4:15/16/24 приняты владельцем. F-II.5 приняты1–4,6–7,9–13,16;5/8 исправлены и ожидают повторной приёмки,14/15 ещё NOT RUN. F-II.4:21 остаётся NOT RUN. Gate не закрывается до подтверждения перечисленного.
+
+1. **Новые действия папок.** В Documents создайте `Папка/Внутри`, поместите туда Graph; создайте соседнюю папку назначения. ПКМ → Rename Folder, затем Move Folder (вводится существующая папка-родитель относительно проекта, например `Documents/Назначение`). Вкладка Graph/ID/ссылки сохраняются. Undo/Redo возвращает папку и имена документов одним шагом. Save/Open сохраняет результат. Удаление непустой папки с неиспользуемым Graph должно закрыть вкладку; Undo возвращает документ. Папка с entry Scene или внешними сильными ссылками удалению не подлежит: отказ сохраняет данные.
+2. **Content.** Повторите Rename/Move для папки с PNG, уже присвоенным Prefab: AssetId и Sprite остаются. Delete убирает папку в приватную корзину; Undo восстанавливает bytes/ID/привязки. Save/Open после Move сохраняет paths. Корни Content/Documents/Scripts и сервисные ProjectData/Cache не переименовываются и не удаляются.
+3. **Scripts и обычная папка в корне.** Создайте подпапку с C# файлом, откройте его в Code Space, выполните Rename/Move. Файл остаётся редактируемым по новому пути; Build & Register видит его. Delete закрывает редактор файла, исключает его из активных sources и сохраняет bytes в `.epidemic/FolderTrash`; зарегистрированные component data сами не удаляются. Для Scripts/root действуют VFS/file semantics; единый native Undo шага выше заявлен для Content/Documents. Затем пересоберите C#, если перемещали source.
+4. **F-II.5:5, InputBindings.** Stop. Откройте существующий Arena Player Turret Prefab, выберите root/component gameplay.inputbindings. Значения left65/right68/up87/down83/attack32 должны быть видны. Поменяйте right на76(L), left на74(J), Save All, Play: J/L двигают, A/D больше не действуют на Player. Stop, Save/Open новым процессом:74/76 сохранены. Верните65/68. `Value unavailable` у этих полей больше не допускается; блокировка во время Play ожидаема.
+5. **F-II.5:8, Collider.** Stop. Arena Enemy Prefab → gameplay.collider2d: shape/radius/half_x/half_y/layer/mask/trigger видны и редактируются. shape0=AABB,1=Circle. Проверьте оба режима, затем mask0: снаряды больше не наносят Enemy collision damage. Верните shape1/radius0.3/layer2/mask5. Projectile: layer4/mask2/trigger=true. Trigger создаёт контакт/попадание без физического выталкивания; Rigidbody/CCD не заявлены.
+6. **F-II.4:23, чистый повтор.** Stop; снимите авторские Breakpoint через Graph Inspector+Apply. Начните новую сессию без Pause/Step и runtime breakpoints. На сцене два placement одного Native Damage/Wait/Damage prefab с одинаковыми входами. Сравните Damaged tick по Entity/activation и повторите запуск. В базовом профиле без перегрузки оба одинаково запущенных Graph должны давать один и тот же результат по тикам. Если повтор с теми же настройками даёт разный порядок/tick — это непрошедшая проверка; freeze пока не подтверждать. Независимые события разных стартовых ticks не означают одну AoE-операцию.
+7. **F-II.4:21, Console/Problems.** Две Play-сессии → Console/Trace Filters: severity, Current session only, Entity/Graph/Activation/Tick, поиск. Copy копирует строки. Двойной клик/Go to Source ведёт к доступной Graph-нode/C# file:line; Go to Entity выбирает правильный placement. В Problems нет Info/успешных сообщений. Закрытие Problems оставляет Debugger.
+
+### F-II.5:14 — C# параметры пошагово
+
+- Stop. Откройте `Scripts/ArenaManagedTurret.cs`. В компоненте `arena.ManagedTurret` поля Damage/Range/FireRate должны иметь source Schema default для проверки именно defaults. Уже переопределённое поле сохраняет свой override; для чистого теста снимите override или удалите/добавьте только managed component и снова прикрепите `Managed Arena` к нему. Исходный Graph root Entity сохраняйте.
+- Измените `Damage = 7` на14, Build & Register C#, дождитесь успешного результата. Убедитесь, что используется актуальная generation. Save All, Play: C# DamageSelf один раз меняет native Health100→86; `gameplay.turret.damage` в Runtime Inspector становится14. Новые projectile получают14. Смотрите native Health, не одноимённое поле другого C# компонента.
+- Stop. Поставьте Range2 и FireRate2 в defaults, снова Build & Register/Save/Play. В Runtime Inspector native `gameplay.turret.range=2`, `cooldown=30` ticks, так как cooldown=60/FireRate. Удерживайте Space/ЛКМ при наличии цели: поражаются цели в новом range, интервалы стрельбы соответствуют cooldown; UI polling/FPS не являются игровыми ticks.
+- Stop, Damage100, Build & Register/Play: native Health0, Died один раз для Player. Если Entity уже удалена, ориентируйтесь на Console/Trace события этой Entity. На отдельном запуске Damage−1 либо FireRate0 вызывает диагностируемый отказ/Failed, не crash; Stop работает. Ошибка не должна считаться успешной игровой логикой.
+- Верните Damage7/Range6/FireRate4, Build & Register и уберите тестовые overrides. Новый Play снова даёт Health93.
+
+### F-II.5:15 — граница authoring/runtime
+
+- Stop: в авторском Player Prefab Health/points100 и gameplay.state.currency0. Затем Play с восстановленным Damage7: Runtime Inspector показывает Health93 и currency≥1 после Award/убийств.
+- Runtime Inspector read-only. Save All во время игры, если команда доступна, сохраняет авторские документы; это не savegame.
+- Stop: авторские Health100/currency0 и исходный Transform. Следующий Play начинает новую сессию, а не продолжает накопленные HP/currency прошлого запуска. Значения runtime не должны проникать в Prefab после Save/Stop.
+- Save/Undo/Redo относятся к авторским правкам. Для дополнительного контроля после Stop измените speed, Undo/Redo, Save; игровой прогресс при этом не возвращается.
+
+После PASS всех пунктов выше можно фиксировать F-II.4/F-II.5 и общий F-II-GATE; до этого они PENDING MANUAL. Полный старый прогон повторять не требуется.

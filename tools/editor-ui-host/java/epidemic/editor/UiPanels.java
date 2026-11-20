@@ -37,6 +37,8 @@ public final class UiPanels {
     private Supplier<List<String>> projectFolders=List::of;
     private Consumer<String> newProjectFolder=path->{};
     public void projectFolderCommands(Supplier<List<String>> folders,Consumer<String> create){projectFolders=folders;newProjectFolder=create;}
+    private java.util.function.BiConsumer<String,String> folderAction=(action,path)->{};
+    public void folderActions(java.util.function.BiConsumer<String,String> action){folderAction=action;}
     private record ProjectFolderRow(String path){public String toString(){int slash=path.lastIndexOf('/');return path.substring(slash+1);}}
     private Consumer<String> newContentFolder;
     public void contentFolderCommands(Consumer<String> action){newContentFolder=action;}
@@ -623,12 +625,14 @@ if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service
                 if(node==tree.getModel().getRoot()||node.getUserObject() instanceof ProjectFolderRow){
                     String directory=node.getUserObject() instanceof ProjectFolderRow row?row.path():"";
                     var menu=new JPopupMenu();menuItem(menu,"New Folder…",()->newProjectFolder.accept(directory));
+                    if(!directory.isEmpty()&&!directory.equals("Documents")&&!directory.equals("Scripts"))for(String action:List.of("rename","move","delete"))menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1)+" Folder…",()->folderAction.accept(action,directory));
                     if(directory.equals("Scripts")||directory.startsWith("Scripts/")){menuItem(menu,"New C# Class…",newSource);menuItem(menu,"Paste C# Source…",()->sourceFileAction.accept("paste",null));}
                     menu.show(tree,event.getX(),event.getY());return;
                 }
                 if(newContentFolder==null||snapshot.storage()!=2||snapshot.playing()||!(node.getUserObject() instanceof FolderRow folder))return;
                 var menu=new JPopupMenu();
                 menuItem(menu,"New Folder…",()->newContentFolder.accept(folder.path()));
+                if(!folder.path().isEmpty())for(String action:List.of("rename","move","delete"))menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1)+" Folder…",()->folderAction.accept(action,"Content/"+folder.path()));
                 menu.show(tree,event.getX(),event.getY());
             }
             @Override public void mouseClicked(MouseEvent event) {

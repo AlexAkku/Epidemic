@@ -37,3 +37,15 @@ Private worker RPC v3 adds synchronous native subcalls tagged by request/generat
 `Project → Create F-II Arena Sample` uses native command43(`arena`), one Workspace Execute for ordinary persisted documents, native PNG import/assignment, and a C# source. Import callbacks reject project/generation changes; duplicate sample/source creation preserves existing files. The Graph includes a real typed Scene Entity reference, validity Branch, Repeat, Spawn and Runtime Wait. Player/Turret is one Entity; WaveSpawner adds two independent component waves under the same Runtime. Sprite leases for unplaced templates are acquired lazily. Build & Register exposes a C# component that configures native range/cooldown/damage and invokes shared Health/State.
 
 Both manual gates remain pending: [combined guide](FII45_MANUAL_QA.md). Overall F-II-GATE is not implicitly closed.
+
+## Review: defaults, scheduling and snapshot boundary
+
+Native F5 properties now explicitly publish their real C++ struct defaults at registration. Inspector reads metadata and never constructs a component to guess a value. Authored properties/parameters/instance overrides retain priority. Previously saved Arena prefabs with omitted fields gain editable bindings/collider defaults without recreation. Native types without declared metadata remain unavailable as before.
+
+Determinism is equal state sequences for equal initial state, tick-stamped inputs, seed and scheduler budgets; it does not imply simultaneous completion of independent coroutines. Simulation budgets here count jobs/work units, not elapsed CPU time. A controlled two-Entity native Damage/Wait/Damage replay checks tick-by-tick Health equality across differently paced runs. This is a bounded native profile, not a claim of universal replay qualification for arbitrary asynchronous managed/external inputs.
+
+A Graph breakpoint is per activation. Pausing one activation before a shared Native Call and issuing Step Tick can shift when another activation reaches that breakpoint. A debug-paused RuntimeSnapshot is an observational, possibly partial-tick projection; it is not a committed savegame/replay snapshot. Editor Save still writes authoring only.
+
+No multi-target/AoE transaction is currently exposed by F-II.5. When introduced, one native operation must fix the target set and stable ordering, validate/stage all writes, commit them before publishing damage/death callbacks and expose gameplay checkpoints only after a native frame/transaction boundary. Launching one coroutine per target does not meet this atomicity contract. Do not implement that barrier or a second game loop in Java.
+
+Arena's three Graph-generated enemies spawn at the invoking Player's world transform; the separate WaveSpawner uses its own transform. This is an intentional minimal sample, not a spatial enemy-placement system.

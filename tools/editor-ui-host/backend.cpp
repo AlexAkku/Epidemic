@@ -1872,15 +1872,17 @@ class Backend {
                 GraphEdit(args, revision);
                 break;
             case 37: {
-                CheckWrite({generation, revision});
-                const auto *folder = workspace_->Folder();
-                if (!folder || args.size() != 1)
-                    throw std::runtime_error("ui.content_folder");
-                if (workspace_->Session() && workspace_->Session()->IsPlaying())
-                    throw std::runtime_error("ui.playing_readonly");
-                Require(folder->CreateContentFolder(args.front()));
-                refresh_content_folders_ = {};
-                break;
+                CheckWrite({generation,revision});const auto *folder=workspace_->Folder();
+                if(!folder||(workspace_->Session()&&workspace_->Session()->IsPlaying())||workspace_->AssetJobsBusy())throw std::runtime_error("ui.folder_requires_idle_authoring");
+                if(args.size()==1)Require(folder->CreateContentFolder(args.front()));
+                else if(args.size()==3&&args[0]=="edit"){
+                    Require(workspace_->EditFolder(args[1],args[2]));
+                    if(!workspace_->Project()->Snapshot()->Find(workspace_->Selection().document)){
+                        const auto entry=workspace_->Project()->Snapshot()->definition.entry_scene;
+                        if(!workspace_->Select({entry,ed::UiElement::Document,0}))throw std::runtime_error("ui.folder_selection");
+                    }
+                }else throw std::runtime_error("ui.content_folder");
+                refresh_content_folders_={};break;
             }
             case 10:
             case 11:
@@ -1896,6 +1898,7 @@ class Backend {
         } catch (const std::exception &failure) {
             error = failure.what();
         }
+        if(operation==7||operation==8)refresh_content_folders_={};
         if(auto worker=active_script_worker_.lock();worker&&worker->Failed()&&workspace_->Session()&&workspace_->Session()->IsPlaying()){
             const auto stopped=workspace_->Stop();StopScripts();if(error.empty())error=stopped?"script.worker_failed_play_stopped":stopped.GetError().code;
         }

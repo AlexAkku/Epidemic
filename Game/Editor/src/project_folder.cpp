@@ -369,8 +369,22 @@ std::filesystem::path SafeAt(const std::filesystem::path &root, std::string_view
     return Take(ResolveProjectPath(root, rel));
 }
 
+// Fixed user mounts only. Service directories and mount roots cannot be moved.
+bool FolderPair(std::string_view from,std::string_view to) {
+    const auto mount=[](std::string_view path)->std::string_view {
+        const auto valid=[](std::string_view p){
+            if(p.find('\\')!=std::string_view::npos||p.back()=='/')return false;
+            std::size_t start=0;unsigned part_index=0;const bool trash=p.starts_with("Content/.Trash/Folders/")||p.starts_with("Documents/.Trash/Folders/");
+            while(start<p.size()){auto end=p.find('/',start);auto part=p.substr(start,end==std::string_view::npos?p.size()-start:end-start);if(part.empty()||(part.front()=='.'&&!(trash&&part_index==1&&part==".Trash")))return false;++part_index;if(end==std::string_view::npos)break;start=end+1;}return true;
+        };
+        if(path.starts_with("Content/")&&path.size()>8&&valid(path))return "Content";
+        if(path.starts_with("Documents/")&&path.size()>10&&valid(path))return "Documents";
+        return {};
+    };
+    return !mount(from).empty()&&mount(from)==mount(to);
+}
 Bytes EncodeMoves(std::uint64_t base,
-                  const std::vector<std::pair<std::string, std::string>> &moves) {
+                  const std::vector<std::tuple<std::string, std::string,bool>> &moves) {
     auto services = Take(runtime::CreateSerializationServices());
     auto writer = services.archives->CreateWriter();
     Require(writer != nullptr, "editor.folder_codec", "No move journal writer");
@@ -378,15 +392,16 @@ Bytes EncodeMoves(std::uint64_t base,
     Take(writer->BeginArray("moves", moves.size()));
     for (std::size_t i = 0; i < moves.size(); ++i) {
         Take(writer->BeginArrayElement(i));
-        Take(writer->WriteString("before", moves[i].first));
-        Take(writer->WriteString("after", moves[i].second));
+        Take(writer->WriteString("before", std::get<0>(moves[i])));
+        Take(writer->WriteString("after", std::get<1>(moves[i])));
+        Take(writer->WriteBool("directory", std::get<2>(moves[i])));
         Take(writer->EndArrayElement());
     }
 
     Take(writer->EndArray());
     return Take(runtime::EncodeDocument(
         Take(writer->Finalize(foundation::StringId::FromString("epidemic.editor.move_journal"),
-                              kVersion))));
+                              {2,0,0}))));
 }
 
 void RecoverMoves(const std::filesystem::path &root, std::uint64_t generation) {
@@ -400,7 +415,7 @@ void RecoverMoves(const std::filesystem::path &root, std::uint64_t generation) {
     const auto document = Take(runtime::DecodeDocument(Take(Read(journal))));
     Require(document.GetTypeId() ==
                     foundation::StringId::FromString("epidemic.editor.move_journal") &&
-                document.GetSchemaVersion() == kVersion,
+                (document.GetSchemaVersion() == kVersion || document.GetSchemaVersion() == runtime::SchemaVersion{2,0,0}),
             "editor.folder_journal", "Unsupported move journal");
     auto services = Take(runtime::CreateSerializationServices());
     auto reader = Take(services.archives->CreateReader(document));
@@ -408,29 +423,31 @@ void RecoverMoves(const std::filesystem::path &root, std::uint64_t generation) {
     const auto count = Take(reader->BeginArray("moves"));
     Require(count <= 128 && base <= generation, "editor.folder_journal",
             "Move journal bounds/base mismatch");
-    std::vector<std::pair<std::string, std::string>> moves;
+    std::vector<std::tuple<std::string, std::string,bool>> moves;
     for (std::size_t i = 0; i < count; ++i) {
         Take(reader->BeginArrayElement(i));
         auto before = Take(reader->ReadString("before")), after = Take(reader->ReadString("after"));
-        Require(before.starts_with("Content/") && after.starts_with("Content/"),
-                "editor.folder_journal", "Move journal path outside Content");
+        const bool directory=document.GetSchemaVersion()!=kVersion?Take(reader->ReadBool("directory")):false;
+        Require(directory ? FolderPair(before,after) : before.starts_with("Content/")&&after.starts_with("Content/"),
+                "editor.folder_journal", "Move journal outside its declared mount");
         (void)SafeAt(root, before);
         (void)SafeAt(root, after);
-        moves.emplace_back(std::move(before), std::move(after));
+        moves.emplace_back(std::move(before), std::move(after),directory);
         Take(reader->EndArrayElement());
     }
 
     Take(reader->EndArray());
     if (base == generation)
         while (!moves.empty()) {
-            const auto before = SafeAt(root, moves.back().first),
-                       after = SafeAt(root, moves.back().second);
+            const auto before = SafeAt(root, std::get<0>(moves.back())),
+                       after = SafeAt(root, std::get<1>(moves.back()));
             const bool original = std::filesystem::exists(before, ec);
             Require(!ec, "editor.folder_journal", "Cannot inspect original source");
             const bool moved = std::filesystem::exists(after, ec);
             Require(!ec, "editor.folder_journal", "Cannot inspect moved source");
             Require(original != moved, "editor.folder_journal",
                     "Ambiguous move recovery; preserve files for manual repair");
+            if(std::get<2>(moves.back()))Require(std::filesystem::is_directory(original?before:after),"editor.folder_journal","Directory journal refers to a file");
             if (moved) {
                 std::filesystem::rename(after, before, ec);
                 Require(!ec, "editor.folder_journal", "Cannot restore uncommitted source move");
@@ -833,6 +850,7 @@ VoidResult ProjectFolder::Save() {
         editor_->saved_documents_.swap(saved_documents);
         saved_assets_ = std::move(index.records);
         saved_visuals_ = visuals_;
+        saved_folder_state_=folder_state_;
         asset_dirty_ = false;
         sprite_dirty_ = false;
         pending_moves_.clear();
@@ -978,6 +996,7 @@ Result<EditReceipt> ProjectFolder::Execute(const EditRequest &request) {
 }
 
 VoidResult ProjectFolder::RestoreEdit(const EditStep &step, bool forward) {
+    if(step.kind==EditStep::Kind::Folder)return RestoreFolder(step,forward,true);
     if (step.kind == EditStep::Kind::Lifecycle) {
         const auto applied = ApplySourceLifecycle(forward ? step.after_source : step.before_source);
         if (!applied)
@@ -1013,6 +1032,91 @@ VoidResult ProjectFolder::RestoreEdit(const EditStep &step, bool forward) {
     RefreshVisualDirty();
     ++asset_revision_;
     return VoidResult::Success();
+}
+
+VoidResult ProjectFolder::MoveFolderBytes(std::string_view source,std::string_view destination) {
+    try {
+        Require(FolderPair(source,destination),"editor.folder_scope","Folder must stay in its Content/Documents mount");
+        const auto from=SafeAt(root_,source),to=SafeAt(root_,destination);
+        Require(std::filesystem::is_directory(from)&&!std::filesystem::exists(to)&&std::filesystem::is_directory(to.parent_path()),"editor.folder_path","Missing source/parent or destination already exists");
+        Require(pending_moves_.size()<128,"editor.folder_journal_limit","Save before more moves");
+        auto pending=pending_moves_;pending.emplace_back(source,destination,true);
+        Take(Publish(SafeAt(root_,".epidemic/source-moves.journal"),EncodeMoves(generation_,pending)));
+        pending_moves_.swap(pending);
+        std::error_code ec;std::filesystem::rename(from,to,ec);
+        Require(!ec,"editor.folder_io","Cannot move folder");return VoidResult::Success();
+    }catch(const Failure &f){return VoidResult::Failure(f.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.folder_io","Folder move failed"));}
+}
+
+VoidResult ProjectFolder::RestoreFolder(const EditStep &step,bool forward,bool replay_document,const EditRequest *initial) {
+    try {
+        Require(pending_moves_.size()<127,"editor.folder_journal_limit","Save before another folder transaction");
+        const auto &from=forward?step.folder_before:step.folder_after;
+        const auto &to=forward?step.folder_after:step.folder_before;
+        auto candidate=assets_;
+        for(auto &source:candidate)if(source.relative_path.starts_with(from+"/")){
+            const auto old=source.relative_path;
+            source.relative_path=to+source.relative_path.substr(from.size());
+            (void)SafeAt(root_,source.relative_path); // Check every resulting asset path before moving bytes.
+            if(to.starts_with("Content/.Trash/Folders/"))source.original_path=old;
+            else if(from.starts_with("Content/.Trash/Folders/")){
+                Require(source.original_path==source.relative_path,"editor.folder_sources","Trash source no longer matches its original path");source.original_path.clear();
+            }
+        }
+        Take(MoveFolderBytes(from,to));
+        auto document=VoidResult::Success();
+        if(initial){auto edited=Execute(*initial);if(!edited)document=VoidResult::Failure(edited.GetError());}
+        else if(replay_document&&step.folder_document_edit)document=forward?editor_->Redo():editor_->Undo();
+        if(!document){auto rollback=MoveFolderBytes(to,from);if(!rollback)return VoidResult::Failure(Error("editor.folder_recovery_required","Preserved folder journal requires recovery"));return document;}
+        assets_.swap(candidate);RefreshAssetDirty();
+        if(replay_document){const auto &visual=forward?step.after:step.before;if(visual){visuals_=visual;RefreshVisualDirty();}}
+        folder_state_=forward?step.folder_after_state:step.folder_before_state;
+        ++asset_revision_;return VoidResult::Success();
+    }catch(const Failure &f){return VoidResult::Failure(f.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.folder_history","Cannot restore folder history"));}
+}
+
+VoidResult ProjectFolder::EditFolder(std::string_view source,std::string_view destination) {
+    try {
+        const auto clean=[](std::string_view path){
+            if(path.find('\\')!=std::string_view::npos||path.empty()||path.back()=='/')return false;
+            std::size_t start=0;while(start<path.size()){auto end=path.find('/',start);auto part=path.substr(start,end==std::string_view::npos?path.size()-start:end-start);if(part.empty()||part.front()=='.')return false;if(end==std::string_view::npos)break;start=end+1;}return true;
+        };
+        Require(clean(source)&&FolderPair(source,source),"editor.folder_scope","Choose a child folder in Content or Documents");
+        const bool deleting=destination.empty();
+        const auto target=deleting?std::string(source.substr(0,source.find('/')))+"/.Trash/Folders/"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()):std::string(destination);
+        Require(FolderPair(source,target)&&(deleting||clean(target))&&target!=source&&!target.starts_with(std::string(source)+"/"),"editor.folder_path","Invalid/cyclic folder destination");
+        const auto physical=SafeAt(root_,source);
+        if(!std::filesystem::exists(physical)&&source.starts_with("Documents/")){
+            const auto prefix=std::string(source.substr(10))+"/";
+            Require(std::ranges::any_of(editor_->Snapshot()->definition.documents,[&](const auto &doc){return doc.name.starts_with(prefix);}),"editor.folder_path","Folder missing");
+            std::filesystem::create_directories(physical);
+        }
+        Require(std::filesystem::is_directory(physical),"editor.folder_path","Folder missing");
+        for(const auto &entry:std::filesystem::recursive_directory_iterator(physical)){
+            const auto bytes=entry.path().lexically_relative(root_).generic_u8string();const std::string rel{reinterpret_cast<const char *>(bytes.data()),bytes.size()};(void)SafeAt(root_,rel);
+            Require(!std::filesystem::is_symlink(entry.symlink_status()),"editor.folder_path","Folder contains a link");
+        }
+        if(deleting)std::filesystem::create_directories(SafeAt(root_,target).parent_path());
+        EditStep step;step.kind=EditStep::Kind::Folder;step.folder_before=source;step.folder_after=target;
+        step.folder_before_state=folder_state_;step.folder_after_state=++next_folder_state_;
+        step.before=visuals_;
+        EditRequest request;request.expected_revision=editor_->Revision();
+        if(source.starts_with("Documents/")){
+            const auto prefix=std::string(source.substr(10))+"/";
+            for(const auto &doc:editor_->Snapshot()->definition.documents)if(doc.name.starts_with(prefix)){
+                if(deleting)request.commands.push_back(DeleteDocument{doc.id});
+                else request.commands.push_back(RenameDocument{doc.id,target.substr(10)+doc.name.substr(source.size()-10)});
+            }
+        }
+        step.folder_document_edit=!request.commands.empty();
+        auto history=PrepareEdit(step);
+        const auto changed=RestoreFolder(step,true,false,step.folder_document_edit?&request:nullptr);
+        if(!changed)return changed;
+        history.back().after=visuals_;edits_.swap(history);edit_cursor_=edits_.size();return VoidResult::Success();
+    }catch(const Failure &f){return VoidResult::Failure(f.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.folder_io","Folder operation failed"));}
 }
 
 VoidResult ProjectFolder::Undo() {
@@ -1335,7 +1439,7 @@ VoidResult ProjectFolder::ApplySourceMove(runtime::AssetId id, std::string_view 
         Require(pending_moves_.size() < 128, "editor.folder_journal_limit",
                 "Save before more source moves");
         auto pending = pending_moves_;
-        pending.emplace_back(found->relative_path, relative);
+        pending.emplace_back(found->relative_path, relative,false);
         Take(Publish(SafeAt(root_, ".epidemic/source-moves.journal"),
                      EncodeMoves(generation_, pending)));
         pending_moves_.swap(pending);

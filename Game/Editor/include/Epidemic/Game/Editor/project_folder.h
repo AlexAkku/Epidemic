@@ -1,4 +1,5 @@
 #pragma once
+#include <tuple>
 
 #include "Epidemic/Game/Editor/editor_commands.h"
 #include "Epidemic/Game/Editor/sprite_sheet.h"
@@ -126,7 +127,7 @@ class ProjectFolder final {
     }
 
     [[nodiscard]] bool IsDirty() const noexcept {
-        return asset_dirty_ || sprite_dirty_ || editor_->IsDirty();
+        return asset_dirty_ || sprite_dirty_ || folder_state_!=saved_folder_state_ || editor_->IsDirty();
     }
 
     [[nodiscard]] const std::vector<ProjectSourceAsset> &Sources() const noexcept {
@@ -195,6 +196,9 @@ class ProjectFolder final {
 
     [[nodiscard]] foundation::Result<void> CreateContentFolder(std::string_view relative) const;
     [[nodiscard]] std::vector<std::string> ContentFolders() const;
+    // Project-owned Content/Documents child directories. Empty destination stages
+    // deletion in the mount's private trash; all changes are one native Undo step.
+    [[nodiscard]] foundation::Result<void> EditFolder(std::string_view source, std::string_view destination);
 
   private:
     struct WriterLock;
@@ -205,12 +209,15 @@ class ProjectFolder final {
     };
 
     struct EditStep {
-        enum class Kind { Document, Move, Visual, Lifecycle };
+        enum class Kind { Document, Move, Visual, Lifecycle, Folder };
 
         Kind kind = Kind::Document;
         MoveRecord move;
         std::shared_ptr<const VisualState> before, after;
         ProjectSourceAsset before_source, after_source;
+        std::string folder_before, folder_after;
+        std::uint64_t folder_before_state=0,folder_after_state=0;
+        bool folder_document_edit=false;
     };
 
     [[nodiscard]] std::vector<EditStep> PrepareEdit(EditStep step) const;
@@ -220,7 +227,10 @@ class ProjectFolder final {
     [[nodiscard]] foundation::Result<void> ApplySourceLifecycle(const ProjectSourceAsset &target);
     [[nodiscard]] foundation::Result<void> ApplySourceMove(runtime::AssetId id,
                                                            std::string_view relative);
-    std::vector<std::pair<std::string, std::string>> pending_moves_;
+    [[nodiscard]] foundation::Result<void> MoveFolderBytes(std::string_view source,std::string_view destination);
+    [[nodiscard]] foundation::Result<void> RestoreFolder(const EditStep &step,bool forward,bool replay_document,const EditRequest *initial=nullptr);
+    std::vector<std::tuple<std::string, std::string, bool>> pending_moves_;
+    std::uint64_t folder_state_=0,saved_folder_state_=0,next_folder_state_=0;
     std::vector<EditStep> edits_;
     std::size_t edit_cursor_ = 0;
     std::vector<ProjectSourceAsset> saved_assets_;

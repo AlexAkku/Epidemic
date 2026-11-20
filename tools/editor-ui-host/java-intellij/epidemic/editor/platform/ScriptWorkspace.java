@@ -126,7 +126,7 @@ public final class ScriptWorkspace implements AutoCloseable {
             @Override public java.nio.file.FileVisitResult preVisitDirectory(Path folder,java.nio.file.attribute.BasicFileAttributes attrs){
                 if(folder.equals(base))return java.nio.file.FileVisitResult.CONTINUE;
                 String name=folder.getFileName().toString();
-                if(name.startsWith(".")||name.equals("Content")||name.equals("obj")||name.equals("bin"))return java.nio.file.FileVisitResult.SKIP_SUBTREE;
+                if(name.startsWith(".")||name.equals("Content")||name.equals("ProjectData")||name.equals("Cache")||name.equals("obj")||name.equals("bin"))return java.nio.file.FileVisitResult.SKIP_SUBTREE;
                 result.add(base.relativize(folder).toString().replace('\\','/'));
                 return result.size()>=256?java.nio.file.FileVisitResult.TERMINATE:java.nio.file.FileVisitResult.CONTINUE;
             }
@@ -141,6 +141,39 @@ public final class ScriptWorkspace implements AutoCloseable {
         if(name.isBlank()||name.equals(".")||name.equals("..")||name.chars().anyMatch(c->"\\/:*?\"<>|".indexOf(c)>=0))throw new IOException("Enter a single valid folder name");
         Files.createDirectory(folder.resolve(name));LocalFileSystem.getInstance().refreshAndFindFileByNioFile(folder.resolve(name));refresh();
     }catch(Exception error){fail(error);}}
+    static Path checkedFolder(Path root,String relative)throws IOException{
+        Path base=root.toRealPath(),candidate=base.resolve(relative).normalize();
+        if(relative.isBlank()||Path.of(relative).isAbsolute()||!candidate.startsWith(base)||candidate.equals(base))throw new IOException("Choose a project child folder");
+        Path rel=base.relativize(candidate);String mount=rel.getName(0).toString();
+        if(Set.of("Content","Documents","ProjectData","Cache").stream().anyMatch(s->s.equalsIgnoreCase(mount)))throw new IOException("Use the native folder action for Content/Documents; service folders are protected");
+        for(var part:rel)if(part.toString().startsWith(".")||Set.of("obj","bin").contains(part.toString()))throw new IOException("Private/build folder");
+        if(mount.equalsIgnoreCase("Scripts")&&rel.getNameCount()==1)throw new IOException("Scripts root is protected");
+        if(!Files.isDirectory(candidate)||!candidate.toRealPath().equals(candidate))throw new IOException("Missing or linked folder");
+        try(var entries=Files.walk(candidate)){for(var iterator=entries.iterator();iterator.hasNext();){var entry=iterator.next();if(Files.isSymbolicLink(entry)||!entry.toRealPath().startsWith(base))throw new IOException("Folder contains a link outside the project");}}
+        return candidate;
+    }
+    void editFolder(String action,String relative,String destination)throws Exception{
+        if(snapshot.get()==null||snapshot.get().playing()||buildActive())throw new IOException("Stop Play/build before folder edits");
+        Path base=root.get().toRealPath(),from=checkedFolder(base,relative),to;
+        if(action.equals("delete")){Path privateRoot=base.resolve(".epidemic");if(!privateRoot.toRealPath().equals(privateRoot))throw new IOException("Linked private directory");Path trash=privateRoot.resolve("FolderTrash");if(Files.exists(trash)&&!trash.toRealPath().equals(trash))throw new IOException("Linked trash");to=trash.resolve(UUID.randomUUID().toString()).resolve(from.getFileName());Files.createDirectories(to.getParent());if(!to.getParent().toRealPath().startsWith(base))throw new IOException("Trash outside project");}
+        else{
+            to=base.resolve(destination).normalize();Path parent=to.getParent();
+            if(!to.startsWith(base)||to.startsWith(from)||Files.exists(to)||!parent.toRealPath().equals(parent))throw new IOException("Invalid/conflicting folder destination");
+            if(relative.startsWith("Scripts/")&&!to.startsWith(base.resolve("Scripts")))throw new IOException("Keep C# folders inside Scripts");
+            if(!relative.startsWith("Scripts/")&&Set.of("Scripts","Content","Documents","ProjectData","Cache").stream().anyMatch(m->m.equalsIgnoreCase(base.relativize(to).getName(0).toString())))throw new IOException("Keep ordinary folders outside fixed mounts");
+            for(var part:base.relativize(to))if(part.toString().startsWith("."))throw new IOException("Private destination");
+        }
+        if(!from.getParent().equals(to.getParent())&&!from.getFileName().equals(to.getFileName()))throw new IOException("Move and rename folders as separate actions");
+        var reopened=new ArrayList<Path>();
+        for(var known:new ArrayList<>(sources.values()))if(known.path().startsWith(from)){save(known);closeEverywhere(known.file());sources.remove(known.file());reopened.add(from.relativize(known.path()));}
+        VirtualFile folder=LocalFileSystem.getInstance().refreshAndFindFileByNioFile(from),parent=LocalFileSystem.getInstance().refreshAndFindFileByNioFile(to.getParent());
+        if(folder==null||parent==null)throw new IOException("Folder missing in VFS");
+        Path target=to;
+        try{WriteCommandAction.runWriteCommandAction(project,()->{try{if(folder.getParent().equals(parent))folder.rename(this,target.getFileName().toString());else {folder.move(this,parent);if(!folder.getName().equals(target.getFileName().toString()))folder.rename(this,target.getFileName().toString());}}catch(IOException e){throw new UncheckedIOException(e);}});}
+        catch(UncheckedIOException error){for(var path:reopened)openBuiltIn(from.resolve(path),1);throw error.getCause();}
+        refresh();if(!action.equals("delete"))for(var path:reopened)openBuiltIn(to.resolve(path),1);
+        status(action.equals("delete")?"Folder retained in "+base.relativize(to):"Folder moved · Rebuild Required");
+    }
     private Path fileClipboard;private boolean cutFile;
     public void fileAction(String action,Path selected){try{
         if(action.equals("copy")||action.equals("cut")){fileClipboard=checked(selected);cutFile=action.equals("cut");status(cutFile?"Source cut; choose Paste in Scripts":"Source copied; choose Paste in Scripts");return;}
@@ -297,6 +330,15 @@ public final class ScriptWorkspace implements AutoCloseable {
         Document document=source.document();WriteCommandAction.runWriteCommandAction(project,()->document.insertString(document.getTextLength(),"// кириллица\n"));saveAll();if(!Files.readString(path).contains("кириллица"))throw new IllegalStateException("Source Save failed");source=sources.get(file);byte[] saved=Files.readAllBytes(path);
         WriteCommandAction.runWriteCommandAction(project,()->document.insertString(document.getTextLength(),"// dirty\n"));Files.writeString(path,"// external change\n");if(safeToSave(document))throw new IllegalStateException("Auto-save guard missed conflict");try{saveAll();throw new IllegalStateException("Conflict overwritten");}catch(IOException expected){if(!expected.getMessage().contains("External change"))throw expected;}
         if(!Files.readString(path).equals("// external change\n")||!document.getText().contains("// dirty"))throw new IllegalStateException("Conflict lost source data");reload(source);if(!document.getText().contains("external change"))throw new IllegalStateException("Explicit reload failed");Files.write(path,saved);reload(sources.get(file));FileEditorManager.getInstance(project).closeFile(file);sources.remove(file);openBuiltIn(path,1);FileEditorManager.getInstance(project).closeFile(file);sources.remove(file);Files.delete(path);
+        Path folder=directory.resolve("Папка проверка");Files.createDirectories(folder);Path nested=folder.resolve("Nested.cs");Files.writeString(nested,"// folder lifecycle\n");openBuiltIn(nested,1);
+        editFolder("rename","Scripts/Папка проверка","Scripts/Переименовано");
+        if(!Files.exists(directory.resolve("Переименовано/Nested.cs")))throw new IOException("Source folder rename lost bytes");
+        Files.createDirectories(directory.resolve("Destination"));editFolder("move","Scripts/Переименовано","Scripts/Destination/Переименовано");
+        if(!Files.exists(directory.resolve("Destination/Переименовано/Nested.cs")))throw new IOException("Source folder move lost bytes");
+        editFolder("delete","Scripts/Destination/Переименовано","");
+        if(Files.exists(directory.resolve("Destination/Переименовано")))throw new IOException("Source folder delete left active sources");
+        try{checkedFolder(root.get(),"ProjectData");throw new IllegalStateException("Service folder accepted");}catch(IOException expected){}
+        Files.delete(directory.resolve("Destination"));
         var released=new CompletableFuture<Void>();
         var timer=new javax.swing.Timer(50,new java.awt.event.ActionListener(){int attempts;public void actionPerformed(java.awt.event.ActionEvent event){
             int count=com.intellij.openapi.editor.EditorFactory.getInstance().getAllEditors().length;
