@@ -1,91 +1,26 @@
-# Проверки F-II
+# QA matrix F-II — frozen
 
-**F-II.0a PASS. F-II.0b PASS. F-II.0 PASS.**
+**F-II-GATE PASS · 21 ноября 2026 · реализация `55ab4bf`.** Владелец подтвердил весь финальный ручной прогон. Следующая стадия не начата.
 
-| Проверка F-II.0b | Статус | Что действительно проверено |
+| Проверка | Результат | Основание / граница |
 |---|---|---|
-| Native Graph / production Java Bridge / IPC v4 | PASS | Три узла, DTO портов/рёбер, совместимое соединение, несовместимые/неизвестные endpoints, stale revision. GraphTests.java повторён. |
-| Move/history/Save/Open во втором native-процессе | PASS | Точные stable IDs/coordinates; delete/Undo восстанавливает incident edges и layout. |
-| Layout migration | PASS | EditorCoreTests: v0 без поля, стабильная сериализация, v1 coordinates, отказ v2. |
-| Rete → JSQuery → Bridge → Execute | PASS | Штатный sandbox EXE создаёт native узлы/ребро, move/history/Save; React DOM отображает snapshot. |
-| FileEditor lifecycle | PASS | Browser/query disposed на close; reopen создаёт новую view; отдельный HWND; реальный Windows UI сохраняет данные при закрытии floating view. |
-| JCEF shutdown | PASS | Нет owned launcher/cef_server/jcef_helper процессов в пределах 15s после standalone smoke. |
-| CSP / ресурсы / Bridge | PASS | File/HTTPS/loopback fetch, eval и Bridge open отклонены; native revision не меняется. |
-| Windows CEF sandbox | PASS | Реальный CefScopedSandboxInfo в EXE до JVM; own renderer restricted=true, integrity=0, Win32kDisabled=true. Без no_sandbox/remote. AppContainer не заявляется. |
-| Official JBR/JCEF / offline / notices | PASS | JBR и matching CEF SDK SHA512, Maven 353 artifacts, npm offline, полный Chromium credits и launcher sources в продукте. |
-| Native mouse/keyboard Graph scenario | PASS адресно | Create, compatible/rejected connection, Escape cancellation, move после Escape, Ctrl+Z/Y/S; отдельное Graph окно и новый процесс Save/Open. Без полного CU прогона. |
-| Удерживаемый drag/Escape/release | PASS JCEF input APIs | Настоящие CefBrowser mouse/key события: ноль native edits при отмене, следующий drag — один edit. Не объявляется физическим mouse-down тестом. |
-| Startup / lock | PASS | Live-owner activation; аварийно остановлен только подтверждённый own main, stale profile restart прошёл полный Platform/native smoke. |
-| Адресные CTest / архитектура | PASS | 19/19; Graph/VM/control/scheduler/time/serialization/schema/renderer, Editor Core/Workspace/SceneView/Headless, permanent architecture checks. |
-| IPC framing / catalog | PASS | 16 cases; 38 canonical IDs + 8 on-demand, 325 tabulated fields. IPC envelope v4, Graph DTO v1. |
-| Static analysis launcher | PASS | Штатный Verify-Changed, обе C++ TU, 0 failures; MSVC Release W4/WX. |
-| Исторические engine analyzers | KNOWN DIAGNOSTICS | Ранее известные Scene signed-bitwise, Composition/EditorDocument exception-escape/unsafe-to-allow-exceptions и ThumbnailCache easily-swappable-parameters; checks не менялись. |
-| 500/2000 nodes / idle / расширенный stress | NOT RUN | F-II.1/Q0; текущее native ограничение 1024 сохраняется. |
-| Полный CTest | NOT RUN в F-II.0b | Адресная выборка; исторические 161/161 относятся к F-I. |
+| Native GraphDefinition / Rete / Bridge / IPC v4 / Execute | PASS | Типизированные nodes/ports/edges, guarded revisions, отказ несовместимого соединения |
+| Координаты, numeric Auto/Lock, migration, history, Save/Open | PASS | Native authoring owner; Undo/Redo и новый процесс |
+| JBR/JCEF / sandbox / CSP / local resources / Bridge | PASS | Offline SHA512/notices; restricted renderer/Win32k lockdown, отказ file/network/eval/недопустимых Bridge команд |
+| Graph FileEditor / независимые окна / focus / shutdown | PASS | SDK smoke и ручная приёмка; surfaces=0, owned launcher/CEF shutdown |
+| Code Space / external editor / managed schemas/lifecycle | PASS в offline scalar/unary профиле | Editor/Document/VFS, defaults/overrides, build/register, errors/last-good, Stop/old handles |
+| Graph↔Scene references и физический DnD | PASS | Typed scopes, две placements, Missing/Restore, Undo/persistence; подтверждение владельца |
+| Native Play clock / five-Entity Damage/Wait/Damage | PASS | Старый budget роняет regression, исправление проходит; одинаковые ticks подтверждены владельцем |
+| Game View / Inspector / Debugger / Pause/Step/Restart/Stop | PASS | Native execution, readonly runtime и исходные authoring values после Stop |
+| Console / Problems / Profiler | PASS в объявленном профиле | Severity/session/entity/source filters, отсутствие routine Info в Problems; реальные/Unavailable providers |
+| Arena / movement / collision / projectiles / waves / C# parameters | PASS | Native/managed/SDK регрессии и полный ручной scope F-II.5 |
+| Scene clipboard / Explorer file/folder UX / fullscreen toolbar | PASS | Native IDs/world transforms/names/history; SDK/packaged тесты и финальный owner smoke |
+| CTest | PASS совокупно 162 проверки | 161 общий прогон + исправленный Stop fixture 1/1 адресно; assertions сохранены |
+| Финальный standalone Release / packaged / IPC / architecture | PASS | Последний полный батч 352.13 s, без Computer Use |
+| Changed-file static analysis | FAIL / inherited backlog | Compiler dependency discovery PASS, 4 TU; 14 прежних diagnostics, 0 новых; checks не ослаблены |
+| Фактический запуск Rider | NOT RUN / принятое исключение | Владелец принял отсутствие установленного Rider; VS Code проверен |
+| 2000-node render / универсальный async replay / CCD / savegame | Не заявляется | За пределами принятого bounded профиля, не превращено в выполненные тесты |
 
-Технологические EditorFactory/LSP/managed пробы из [baseline](FII_BASELINE.md) не выданы за продуктовый Code Space или C# Play. Их окончательные задачи — [F-II.2](FII_CODESPACE_MANAGED_CONTRACT.md).
+Точная конфигурация физических DPI/мониторов отдельно владельцем не перечислялась; отдельные значения не приписываются. Полный U/Computer Use прогон заново не выполнялся.
 
-[Точный результат и команды](FII0B_GRAPH_ROUNDTRIP.md). F-II.1 реализован; автоматическая функциональная квалификация PASS, manual gate NOT RUN.
-
-## F-II.1
-
-| Проверка | Статус | Основание |
-|---|---|---|
-| Native authoring / metadata / atomic fragment / 50-node history | PASS | Production Bridge, typed rejections, точные IDs/positions/settings во втором процессе |
-| Compile / native VM / Scheduler | PASS | Math13, overflow Node ID, Branch/Repeat/Wait result7/time6 |
-| Graph Inspector / Save / invalid input / Undo | PASS | Настоящее Swing поле, pending draft flush, invalid Save reject, EDT future ordering |
-| 64-node JCEF drag/Escape/Undo | PASS input APIs | Сохраняются относительные позиции; физическая мышь — ручная приёмка |
-| JCEF100/500 / HTML/depth/size/CSP / lifecycle | PASS | Реальный DOM, kernel renderer peak + CDP heap, UI disposal/reopen/HWND/shutdown |
-| CTest / architecture / IPC / catalog | PASS | 19/19 и 16 framing cases; свежие затронутые Editor consumers |
-| Static | KNOWN DIAGNOSTICS: Verify-Changed Fast проверил 61 TU; общий результат FAIL из-за предупреждений в неизменённом коде. Два новых unchecked-optional-access исправлены; повтор backend с теми же checks не содержит diagnostics на добавленных/изменённых строках. Sandbox metrics TU чистый PASS. Сохраняются signed-bitwise Scene, exception/unsafe constructors Composition/Editor, ThumbnailCache parameters, narrowing в тестах и float-loop/switch diagnostics native_viewport. Подавлений и ослабления checks нет | Checks не ослаблялись; классификация в отчёте |
-| 2000-node render | NOT RUN / native limit1024 | Безопасный reject PASS, лимит не повышался |
-| Ручной Windows input/visual acceptance | PASS · владелец 2026-11-14 | Без Computer Use; [инструкция](FII1_MANUAL_QA.md) |
-
-[Отчёт F-II.1](FII1_GRAPH_AUTHORING.md).
-
-
-F-II.1-GATE **PASS**: владелец подтвердил ручную приёмку 2026-11-14 («Проверил, всё работает»). Исходная реализация `451ba62`; ранее зафиксированные ограничения производительности и исторические static diagnostics сохраняются. F-II.2 начинается от этого коммита.
-
-
-## F-II.2
-
-| Проверка | Результат |
-|---|---|
-| Full Debug/native-only CTest, public headers, architecture | PASS 161/161 |
-| Scalar metadata + native commands + Undo/Redo + fresh-process Save/Open | PASS; i64/double/bool/string |
-| Production Code Space build/register; SDK errors; failed last-good; Directory.Build.targets | PASS standalone smoke |
-| Source Save/external conflict/Reload/reopen/Editor disposal | PASS; owner-lifetime race regression retained |
-| C# through native VM and Play/Send/Tick; two methods, one worker, Stop and retired handles | PASS automated |
-| IPC v4/catalog and existing managed ABI tests | PASS |
-| Static | 73 TU checked; new diagnostics corrected, existing-code warnings remain FAIL/backlog |
-| Physical multiwindow/Rider/visual qualification | MANUAL NOT RUN |
-| LSP | NOT SHIPPED; specification offline fallback, not claimed PASS |
-
-Уточнение по ручному прогону 2026-11-16: VS Code/Open With и автосохранение приняты владельцем. Rider принят с исключением без установленного приложения. Schema defaults, Remove Component, Graph inline/menu/clipboard и новые shortcuts ожидают адресного повтора после исправлений; [инструкция](FII_REVIEW_MANUAL_QA.md). Это не общий F-II.2-GATE PASS.
-
-## F-II.3 — текущий implementation batch
-
-Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.
-
-Обновление 2026-11-16: владелец принял пункты 1–21 адресного прогона. F-II.2-GATE PASS (offline scalar/unary, Rider принят с исключением). Функциональные 17/19/20 сохранить для последующих регрессий. После замечаний UI проверены стабильные docking bounds, Inspector 220 px, caption controls максимизированного окна и закрываемая диагностика без resize canvas. Итоговый F-II.3-GATE ожидает короткого повтора UI и результата пункта 22; физические конфигурации DPI отдельно владельцем не перечислены. Текущий Graph DTO v5, envelope IPC v4. F-II.4 не начат.
-
-## Актуальная квалификация F-II.4 / F-II.5
-
-Исторические записи выше описывают соответствующие проверки, а не текущий gate. Владелец впоследствии подтвердил исправления и пункт22: **F-II.3-GATE PASS**. F-II.4 и F-II.5 реализованы; оба **PENDING MANUAL**.
-
-| Проверка | Фактический результат |
-|---|---|
-| Full native build / public headers / CTest | PASS,162/162 |
-| Shared native gameplay / Graph / C# worker RPC v3 | PASS, настоящий Health owner и новый процесс |
-| Arena fixed tick / Wait / input bindings / Pause / Step / time scale | PASS native |
-| AABB/Circle / mask / trigger / hit once / death / cancellation | PASS native, включая Died breakpoint и teardown |
-|1000 spawn/despawn, Entity records / Scene nodes / jobs | PASS native, memory/handle instrumentation |
-| Standalone Release / JCEF / production Arena PNG import / shutdown | PASS после исправления повторной workspace initialization |
-| Packaged Runtime / Graph↔Scene / Graph / C# | PASS |
-| Packaged HWND/presentation, IPC/catalog/architecture | PASS, Arena в двух HWND; финальный адресный батч164.02s |
-| Static analysis |0 новых позиций;33 inherited +1 toolchain, общий FAIL/backlog |
-| Физический фокус/мониторы/DPI/playable slice | NOT RUN агентом; [совместная инструкция](FII45_MANUAL_QA.md) |
-
-Без Computer Use, без push. F-II-GATE не закрыт автоматически; F-III не начат.
-
-19 ноября2026: после ручных замечаний исправлены compile-only native Graph, выбор Prefab root, Sprite Remove/Fit/Reset, Documents/folders, responsive actions и i64/f64 math. Все162 native CTest прошли; после lint-only правок повторный Graph VM PASS. Последний standalone Release/JCEF (336.50s) и packaged (190.77s) PASS, включая реальный busy Save→Graph Open и два HWND. Deep52TU/104checks сохраняет inherited/toolchain FAIL;4 новых позиции исправлены и проходят адресные clang-tidy/cppcheck4/4. Ручные gate остаются PENDING MANUAL. [Отчёт](FII45_REVIEW_FIXES.md), [адресные действия и продолжение](FII45_REVIEW_QA.md).
+[Принятые границы](FII_ACCEPTANCE.md) · [Результаты и artifact](FII_FREEZE.md) · [Регрессионные сценарии](FII45_MANUAL_QA.md).

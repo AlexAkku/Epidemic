@@ -14,6 +14,6 @@
 
 Inline literals, Input defaults, native Undo/Redo и Save/Open используют действующие команды/сериализацию. Оба пути VM — data и control flow — проверяют типы. NaN/Inf, деление на ноль и переполнение отклоняются; signed division MIN/−1 не вызывает UB. Отчёт Preview и runtime port values форматируются без обнуления малых дробей через to_chars.
 
-Проверки и текущий gate: [исправления регрессии](FII45_REVIEW_FIXES.md). [Ручной прогон](FII45_REVIEW_QA.md).
+Проверки и текущий gate: [исправления регрессии](FII_FREEZE.md). [Ручной прогон](FII45_MANUAL_QA.md).
 
 Согласование типа, правка значения и подключение сохраняются одним EditorWorkspace::Execute и одной записью Undo/Redo. Numeric authoring adapter строит временный кандидат GraphDefinition для планирования; авторитетные граф, проверка, история и сохранение принадлежат существующему EditorProject. Java/JS форматируют native DTO и посылают команды, не вычисляют игровую арифметику.

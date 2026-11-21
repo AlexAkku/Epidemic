@@ -16,7 +16,7 @@ Game progress is session-only for F-II.5. Editor Save serializes authoring; Stop
 
 ## Current verification
 
-После замечаний19 ноября Graph получил отдельные f64 math-ноды с явными conversions: [контракт](FII_NUMERIC_GRAPH.md). Это не расширяет native/managed gameplay call ABI, который остаётся i64→i64. [Исправления приёмки](FII45_REVIEW_FIXES.md), [адресный повтор](FII45_REVIEW_QA.md).
+После замечаний19 ноября Graph получил отдельные f64 math-ноды с явными conversions: [контракт](FII_NUMERIC_GRAPH.md). Это не расширяет native/managed gameplay call ABI, который остаётся i64→i64. [Исправления приёмки](FII_FREEZE.md), [адресный повтор](FII45_MANUAL_QA.md).
 
 First and second native checkups PASS. Final full native build and CTest162/162 PASS, including Arena Graph/Wait, movement/input, collision/projectile/death/waves, Pause/Step/time scale/Stop and1000 spawn/despawn cycles. Standalone Release smoke PASS; final packaged regression results are recorded in [FII5_REPORT](FII5_REPORT.md). Automated success does not close the manual gates.
 

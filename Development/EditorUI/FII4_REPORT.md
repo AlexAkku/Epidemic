@@ -4,7 +4,7 @@
 
 ## Статус
 
-F-II.3-GATE PASS — подтверждён владельцем, включая пункт22. F-II.4 реализован; standalone Release и функциональные автоматические проверки прошли (завершение17 ноября 2026). Статический анализ сохраняет отдельно перечисленные inherited FAIL. **F-II.4-GATE PENDING MANUAL**: нельзя считать native/GPU automation подтверждением физического фокуса, мониторов и удобства кадров. F-II.5 не начат.
+F-II.3-GATE PASS — подтверждён владельцем, включая пункт22. F-II.4 реализован; standalone Release и функциональные автоматические проверки прошли (завершение17 ноября 2026). Статический анализ сохраняет отдельно перечисленные inherited FAIL. **F-II.4-GATE PASS** по последующей ручной приёмке владельца; общий F-II заморожен 21 ноября 2026. Ниже сохранены измерения implementation batch, не новые тесты.
 
 ## Результат реализации
 
@@ -32,7 +32,7 @@ Deep analysis выполнен без ослабления:77 translation units 
 
 Step to Node — кооперативный переход между native node boundaries в существующем execution budget; это не произвольный breakpoint внутри managed C# и не Step Tick. Native managed calls ограничиваются существующим worker deadline. Runtime polling100ms live/500ms stopped; Game presentation cap60/120 не повышает Runtime60Hz и не гарантирует фактическую FPS. Пресеты Canvas имеют логический размер, physical extent зависит от DPI. Native Graph limit1024 сохранён;2000 узлов квалифицируются как ожидаемый отказ. GPU timing/allocations без provider не выдаются за измеренные значения.
 
-[Контракт](FII4_RUNTIME_CONTRACT.md) · [Пошаговая ручная проверка](FII4_MANUAL_QA.md).
+[Контракт](FII4_RUNTIME_CONTRACT.md) · [Пошаговая ручная проверка](FII45_MANUAL_QA.md).
 
 
 ## Финальный Release и функциональные регрессии
@@ -69,28 +69,7 @@ Graph в полном standalone/JCEF:100nodes roundtrip828ms, renderer peak98.3
 
 **1000Entity с диагностическими labels сейчас требуют около76ms на кадр. Это явный предел текущего presentation profile, а не60FPS.** Снижение стоимости массовой отрисовки согласовать как отдельную оптимизацию, если такой профиль нужен для ближайшего gameplay. Не достигать FPS отключением обязательных diagnostics.
 
-## Точная граница перехода
 
-F-II.3-GATE PASS; F-II.4 code complete и функциональные проверки PASS. F-II.4-GATE остаётся **PENDING MANUAL** до приёмки кадров, фокуса, DPI/нескольких окон и приведённых бюджетов. Имеющиеся ограничения providers/DTO и inherited static diagnostics перечислены явно; никаких новых игровых циклов в Java нет. F-II.5 не начат.
+## Freeze
 
-
-Последняя адресная EditorCore build/CTest после финального форматирования runtime values — PASS. Дополнительные10 source checks:4 PASS на двух Graph VM файлах,6 inherited FAIL в трёх UI/runtime sources;25 уникальных диагностик,0 на новых строках F-II.4. Общий historical static gate остаётся FAIL/backlog, а не скрытый PASS.
-
-Готовая сборка для ручного прогона: `Temp/U/verification-images/40e95bc63b34425ba4fcbb92ea0d8e63/EpidemicEditor/EpidemicEditor.exe`. Computer Use не применялся; push не выполнялся.
-
-## Повторная сверка после обрыва связи — 2026-11-17
-
-Проверена зафиксированная реализация на `75bc164` и предшествующие коммиты `695fc4e`/`688be74`. До сверки рабочее дерево чистое; `git fsck --no-dangling` завершился с кодом0. Потерянных изменений или новых дефектов повторный прогон не выявил; код приложения не менялся. Исправлено утверждение выше о буквальном соблюдении ограничения двумя прогонами.
-
-Повторно завершены, а не перенесены из старого отчёта:
-
-- Full Debug build PASS (227.23s); полный CTest **161/161 PASS**,0FAIL (358.50s). В актуальном `LastTest.log`161 успешный результат. Оставшийся `LastTestsFailed.log` датирован предыдущим неуспешным запуском и не является итогом этой сверки.
-- Свежая offline standalone Release-сборка и полный Platform/JCEF smoke PASS: native Health93/Wait/Step, активная нода в JCEF, совпадающие session/tick, readonly overlay, crash/reconnect и завершение без принадлежащих приложению launcher/CEF-процессов.
-- Содержимое193 Java/Graph классов и ресурсов прошлого дистрибутива совпало со свежей сборкой; SHA256 backend EXE и viewport DLL также совпали. Прошлый EXE не содержал устаревшую реализацию.
-- Против JAR/backend/JBR из нового дистрибутива: RuntimeTests, GraphSceneTests, GraphTests, ScriptTests, RuntimePresentationTests — PASS. Подтверждены native Damage/Wait/Damage100/93/86, Pause/Step/Restart, stale session/connection rejection, Stop с authoring100 и повторное открытие в новом процессе. Два HWND используют одну native сессию; реальные GPU pixels/input/readonly Inspector проверены.
-- Проверка200 открытий/закрытий Game: surfaces0; на второй сотне Δhandles−3, Δprivate bytes−4.49MiB. Нагрузки10/100/1000Entity и1/100activation прошли. Повторный native tick p95 на1000Entity —1042.9µs, Game draw p95 —63.51ms; это измерение, а не обещание60FPS.
-- Adversarial IPC v4, catalog/source coverage и managed architecture — PASS. Весь согласованный повторный batch завершился с кодом0 за1050.23s.
-
-Свежий EXE: `Temp/U/verification-images/fa8c25dd46614aaa9d365727f7e097d6/EpidemicEditor/EpidemicEditor.exe`. Предыдущая проверенная сборка сохранена.
-
-Источник игровой симуляции остаётся C++ `PlaySession::Pump`; Java получает immutable snapshots через opcode42 и отправляет команды управления, не исполняет собственные ticks. Полный статический анализ заново не запускался: исходники не изменены, его известный inherited FAIL/backlog выше сохраняется. F-II.4-GATE **PENDING MANUAL**: кадры, физический фокус/DPI/несколько мониторов и согласование бюджетов остаются владельцу по `FII4_MANUAL_QA.md`, начинающемуся с10 комбинированных регрессионных сценариев. F-II.5 не начат. Computer Use и push не выполнялись.
+F-II.4/F-II.5 и общий F-II-GATE PASS. Финальная реализация `55ab4bf` принята владельцем 21 ноября; [итоговый отчёт](FII_FREEZE.md). Измерения выше сохраняются как regression baseline; старые standalone images не являются актуальным artifact.

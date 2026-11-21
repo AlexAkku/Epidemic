@@ -1,6 +1,6 @@
-# Кандидат freeze F-II: scheduling и последний UX-батч
+# F-II — итоговый freeze-отчёт
 
-20–21 ноября 2026. Отправная точка: `8b27287`. Без Computer Use и push. Новые панели и F-III не вводились. F-II-GATE **PENDING MANUAL** до короткого повтора нового scheduling/UX; прежний ручной scope F-II.5 полностью принят владельцем.
+21 ноября 2026. **F-II-GATE PASS · F-II FROZEN.** Владелец подтвердил весь финальный ручной прогон на реализации `55ab4bf`: «Всё проверил, работает корректно». Отправная точка последнего implementation batch: `8b27287`. Нового Computer Use или повторного полного прогона не выполнялось; push не выполнялся. Следующая стадия не начата.
 
 ## Изменения
 
@@ -26,8 +26,14 @@
 
 - Native replay проверяет равные входы и ready activations; это не универсальная replay-квалификация асинхронных managed/external inputs. Атомарная AoE-транзакция и committed savegame snapshot по-прежнему будущий контракт; debug projection может быть partial tick.
 - Content folder copy требует полного текущего asset snapshot (до 1000 записей). Если snapshot неполон, операция явно отклоняется, не теряя скрытые assets. Для Scripts/обычных папок действуют VFS/file semantics; native atomic Undo заявлен для Scene mutation и существующих Content/Documents move/delete. Explorer batch file operations последовательны и прекращаются на первом отказе.
-- Визуальное поведение нового drag/rename/fullscreen toolbar остаётся на владельце. Исторический static backlog: signed bitwise, exception specifications/escape, optional access, похожие параметры и branch clone; отдельно MSVC enum-cast diagnostic. Этот backlog не закрывается изменением checks.
+- Владелец подтвердил drag/rename/fullscreen toolbar и одинаковые ticks у пяти экземпляров. Исторический static backlog: signed bitwise, exception specifications/escape, optional access, похожие параметры и branch clone; отдельно MSVC enum-cast diagnostic. Этот backlog не закрывается изменением checks.
 
-[Короткая финальная проверка](FII45_REVIEW_QA.md#финальный-ручной-прогон-перед-freeze-f-ii). После её подтверждения можно фиксировать общий PASS и freeze; F-III не начинается автоматически.
+[Регрессионный набор](FII45_MANUAL_QA.md) принят владельцем 21 ноября. F-II.0–F-II.5 и общий gate закрыты в описанном профиле; следующий этап требует отдельной задачи.
 
-Текущий квалифицируемый EXE: `D:/MyProjects/Epidemic engine v2.0/Temp/U/verification-images/2e86f090fd7845cf9f9c9b8ef7bec475/EpidemicEditor/EpidemicEditor.exe`.
+Замороженный квалифицированный EXE: `D:/MyProjects/Epidemic engine v2.0/Temp/U/verification-images/2e86f090fd7845cf9f9c9b8ef7bec475/EpidemicEditor/EpidemicEditor.exe`.
+
+## Что сохранено после очистки
+
+Сохранены исходники/тесты/данные движка и редактора, исходные задания, текущие контракты/ADR/матрицы, регрессионные инструкции и измеренные бюджеты. Оставлен один принятый standalone image; pinned JBR/JCEF/CEF SDK, Maven/npm caches, licenses и текущие native build/compilation databases сохранены для offline разработки.
+
+Промежуточные review/entry инструкции и накопленные статусы сведены в этот отчёт, матрицы и регрессионный набор. Удалены устаревшие standalone images, доступные для очистки промежуточные outputs, автоматически созданные smoke-проекты, логи и одноразовые служебные скрипты. Каталоги с проектными данными (`fii0`, `fixtures`, `platform`, `ui-host`, `ui-release-tests`, `ui-tests`) сохранены, чтобы не удалить пользовательские проекты. Контроль SHA256 принятого EXE, backend и JAR подтвердил отсутствие изменений; offline-зависимости и текущие build-каталоги сохранены. История удалённой документации доступна в Git. Очистка не меняет production-код и не запускает следующий этап.

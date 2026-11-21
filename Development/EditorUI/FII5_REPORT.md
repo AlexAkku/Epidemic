@@ -1,6 +1,6 @@
 # F-II.5 — Gameplay Framework
 
-Отправная точка: `763dbc3`. Работа выполнена одним агентом, без Computer Use и push. F-II.4 и F-II.5 требуют отдельного ручного подтверждения владельца; общий F-II-GATE автоматически не закрывается.
+Отправная точка: `763dbc3`. Работа выполнена одним агентом, без Computer Use и push. Ручная приёмка впоследствии завершена: F-II.4/F-II.5 и общий F-II-GATE PASS, F-II FROZEN 21 ноября 2026. Актуальный результат: [FII_FREEZE](FII_FREEZE.md).
 
 ## Реализация тремя частями
 
@@ -35,4 +35,4 @@ Standalone Release build и полный JCEF smoke **PASS**, включая pro
 
 [Совместный пошаговый прогон](FII45_MANUAL_QA.md): полный F-II.4, десять ранних регрессий и16 Arena/C# сценариев F-II.5. Закройте старый экземпляр и запускайте новый EXE из итоговой ссылки. Проверяйте максимизированное окно, реальный фокус, DPI/мониторы и обе независимые панели.
 
-Профиль ограничен 2D overlap/trigger без Rigidbody/CCD, owner-scoped unary i64 API с явными единицами, session-only прогрессом и существующими bounded managed scopes. Editor Save не является savegame. F-II.4-GATE и F-II.5-GATE **PENDING MANUAL**; F-III не начат.
+Профиль ограничен 2D overlap/trigger без Rigidbody/CCD, owner-scoped unary i64 API с явными единицами, session-only прогрессом и существующими bounded managed scopes. Editor Save не является savegame. F-II.4-GATE и F-II.5-GATE **PASS**, подтверждены владельцем; следующая стадия не начата.

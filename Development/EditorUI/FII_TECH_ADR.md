@@ -1,5 +1,7 @@
 # F-II.0. Технический отчёт и ADR
 
+**21 ноября 2026: F-II-GATE PASS, F-II FROZEN.** Владелец подтвердил реализацию `55ab4bf`. Решения и ограничения этого ADR сохраняются; следующая стадия не начата. Итог: [FII_FREEZE](FII_FREEZE.md).
+
 **Статус F-II.0 — PASS. F-II.0a PASS, F-II.0b PASS.** Native Graph roundtrip и настоящий Windows CEF sandbox квалифицированы в штатном продукте. Code Space/managed по уточнённому заданию закреплены окончательными контрактами F-II.2. [Отчёт F-II.0b](FII0B_GRAPH_ROUNDTRIP.md) · [Baseline](FII_BASELINE.md) · [Матрица](FII_FEATURE_MATRIX.md) · [Проверки](FII_QA_MATRIX.md) · [Приёмка](FII_ACCEPTANCE.md).
 
 ## Зависимости на Windows 11 x64
@@ -68,7 +70,7 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 
 ## F-II.3 — текущий implementation batch
 
-Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.
+Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE PASS по последующему подтверждению владельца; финальный F-II-GATE закрыт 21 ноября.
 
 
 ## F-II.4 — native execution authority (17 ноября 2026)
